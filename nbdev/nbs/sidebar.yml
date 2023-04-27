@@ -1,0 +1,12 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - 00_card_overview.ipynb
+      - 01_card.ipynb
+      - 02_desk.ipynb
+      - 03_how_to_use_nbdev.ipynb
+      - 04_directives.ipynb
+      - 05_create_page.ipynb
+      - 06_beautiful_page.ipynb
+      - 07_test.ipynb
