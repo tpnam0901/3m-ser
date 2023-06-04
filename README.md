@@ -22,10 +22,33 @@
 </p>
 
 ## Key Features
+- 3M-SER - a multi-modal speech emotion recognition model that uses multi-head attention fusion of multi-feature embeddings to learn the relationship between speech and emotion.
 ## How To Use
+- Clone this repository
+```bash
+git clone https://github.com/namphuongtran9196/3m-ser.git 
+cd 3m-ser
+```
+- Install requirements
+```bash
+conda create -n 3m-ser python=3.7 -y
+conda activate 3m-ser
+pip install -r requirements.txt
+```
+- Dataset used in this project is IEMOCAP. You can download it [here](https://sail.usc.edu/iemocap/iemocap_release.htm). Or you can download our preprocessed dataset [here](https://drive.google.com/drive/folders/1-0Z3Q4QZ3Z2Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z?usp=sharing).
+
+- Preprocess data
+```bash
+python preprocess.py --data_path <path_to_iemocap_dataset> --output_path <path_to_output_folder>
+```
+
+- Before starting training, you need to modify the config file in the config folder. You can refer to the config file in the config folder for more details.
+```bash
+python main.py train
+```
+
 ## Download
-## Credits
-## Related
+- We provide some pre-trained models which achieve the results as in the paper. You can download them [here](https://drive.google.com/drive/folders/1-0Z3Q4QZ3Z2Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z?usp=sharing).
 ## License
 ---
 
