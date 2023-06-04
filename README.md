@@ -4,7 +4,7 @@
   <br>
 </h1>
 
-<h4 align="center">Multi-modal Speech Emotion Recognition using Multi-head Attention Fusion of Multi-feature Embeddings</h4>
+<h4 align="center">Official code repository for paper "Multi-modal Speech Emotion Recognition using Multi-head Attention Fusion of Multi-feature Embeddings". Paper accepted to EAI INISCOM 2023</h4>
 
 <p align="center">
 <a href=""><img src="https://img.shields.io/github/stars/namphuongtran9196/3m-ser" alt="stars"></a>
