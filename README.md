@@ -53,10 +53,11 @@ python main.py train
 ## Download
 - We provide some pre-trained models which achieve the results as in the paper. You can download them [here](https://drive.google.com/drive/folders/1-0Z3Q4QZ3Z2Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z?usp=sharing).
 ## License
----
-
-> GitHub [@namphuongtran9196](https://github.com/namphuongtran9196) &nbsp;&middot;&nbsp;
+- We use the [Unlicense](https://unlicense.org/) license. You can use it for any purpose.
 
 ## Citation
 
 ## References
+---
+
+> GitHub [@namphuongtran9196](https://github.com/namphuongtran9196) &nbsp;&middot;&nbsp;
