@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Các bước cơ bản để buil một nbdev repository - step by step">
+
+<title>TODO - How To Use nbdev</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./img.png" rel="icon" type="image/png">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="TODO - How To Use nbdev">
+<meta property="og:description" content="Các bước cơ bản để buil một nbdev repository - step by step">
+<meta property="og:site-name" content="TODO">
+<meta name="twitter:title" content="TODO - How To Use nbdev">
+<meta name="twitter:description" content="Các bước cơ bản để buil một nbdev repository - step by step">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar docked nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Gradient Technologies</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html">
+ <span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="https://github.com/hoangtrung020541/nbdev_beautiful" aria-current="page">
+ <span class="menu-text">Github</span></a>
+  </li>  
+</ul>
+              <div class="quarto-toggle-container">
+                  <a href="" class="quarto-color-scheme-toggle nav-link" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+                  <a href="" class="quarto-reader-toggle nav-link" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+              </div>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+    <div class="container-fluid d-flex justify-content-between">
+      <h1 class="quarto-secondary-nav-title">How To Use nbdev</h1>
+      <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation docked overflow-auto">
+      <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        <div class="sidebar-tools-collapse tools-wide">
+    <a href="https://www.facebook.com/" title="" class="sidebar-tool px-1"><i class="bi bi-facebook"></i></a>
+    <a href="https://discord.com/" title="" class="sidebar-tool px-1"><i class="bi bi-discord"></i></a>
+    <a href="https://twitter.com" title="" class="sidebar-tool px-1"><i class="bi bi-twitter"></i></a>
+    <a href="" title="" id="sidebar-tool-dropdown-0" class="sidebar-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-github"></i></a>
+    <ul class="dropdown-menu" aria-labelledby="sidebar-tool-dropdown-0">
+        <li>
+          <a class="dropdown-item sidebar-tools-collapse-item" href="https://github.com/hoangtrung020541/nbdev_beautiful">
+          Source Code
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item sidebar-tools-collapse-item" href="https://github.com/hoangtrung020541/nbdev_beautiful/issues">
+          Report a Bug
+          </a>
+        </li>
+    </ul>
+</div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">Quick start</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./how_to_use_nbdev.html" class="sidebar-item-text sidebar-link active">How To Use nbdev</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_directives.html" class="sidebar-item-text sidebar-link">Directives</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05_create_page.html" class="sidebar-item-text sidebar-link">Create And Edit Page</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06_beautiful_page.html" class="sidebar-item-text sidebar-link">Custom Page</a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">Examples</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./card_overview.html" class="sidebar-item-text sidebar-link">Introducing Cards</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./card.html" class="sidebar-item-text sidebar-link">Test</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./desk.html" class="sidebar-item-text sidebar-link">Test</a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test.html" class="sidebar-item-text sidebar-link">Test</a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">1. Installation</a></li>
+  <li><a href="#tạo-github-repository-trống-và-clone-về-local" id="toc-tạo-github-repository-trống-và-clone-về-local" class="nav-link" data-scroll-target="#tạo-github-repository-trống-và-clone-về-local">2. Tạo github repository trống và clone về local</a></li>
+  <li><a href="#khởi-tạo-nbdev-trên-repository" id="toc-khởi-tạo-nbdev-trên-repository" class="nav-link" data-scroll-target="#khởi-tạo-nbdev-trên-repository">3. Khởi tạo nbdev trên repository</a></li>
+  <li><a href="#push-repository-đã-được-khởi-tạo-nbdev-lên-github" id="toc-push-repository-đã-được-khởi-tạo-nbdev-lên-github" class="nav-link" data-scroll-target="#push-repository-đã-được-khởi-tạo-nbdev-lên-github">4. Push repository đã được khởi tạo nbdev lên GitHub</a></li>
+  <li><a href="#kích-hoạt-github-pages" id="toc-kích-hoạt-github-pages" class="nav-link" data-scroll-target="#kích-hoạt-github-pages">5. Kích hoạt GitHub Pages </a></li>
+  <li><a href="#các-bước-cơ-bản-để-build-một-nbdev-repository" id="toc-các-bước-cơ-bản-để-build-một-nbdev-repository" class="nav-link" data-scroll-target="#các-bước-cơ-bản-để-build-một-nbdev-repository">6. Các bước cơ bản để build một nbdev repository</a></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/TODO/TODO/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title d-none d-lg-block">How To Use nbdev</h1>
+</div>
+
+<div>
+  <div class="description">
+    Các bước cơ bản để buil một nbdev repository - step by step
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<section id="installation" class="level3">
+<h3 class="anchored" data-anchor-id="installation">1. Installation</h3>
+<ul>
+<li>Python</li>
+<li>Trình quản lý Python package: Khuyến khích sử dụng <code>conda</code> hoặc <code>pip</code></li>
+<li>Jupyter Notebook: <code>pip install notebook</code> hoặc <code>conda install notebook</code></li>
+<li>nbdev: <code>pip install nbdev</code> hoặc <code>conda install -c fastai nbdev</code></li>
+<li>Quarto: <code>nbdev_install_quarto</code></li>
+</ul>
+</section>
+<section id="tạo-github-repository-trống-và-clone-về-local" class="level3">
+<h3 class="anchored" data-anchor-id="tạo-github-repository-trống-và-clone-về-local">2. Tạo github repository trống và clone về local</h3>
+<ul>
+<li>Bạn có thể tạo nhanh một github repo thông qua link này: <a href="https://github.com/new">github.com/new</a>.</li>
+<li>Nhớ thêm description cho repo, bởi vì nbdev sẻ sử dụng nó. Không tạo tạo các file <code>README.md</code>, <code>.gitignore</code>, hoặc <code>license</code>.</li>
+<li>Clone code về local và di chuyển đến repo đó bằng command <code>cd name_repo</code> trên terminal.</li>
+</ul>
+</section>
+<section id="khởi-tạo-nbdev-trên-repository" class="level3">
+<h3 class="anchored" data-anchor-id="khởi-tạo-nbdev-trên-repository">3. Khởi tạo nbdev trên repository</h3>
+<ul>
+<li>Để khởi tạo nbdev trên repository, bạn hãy sử dụng command <a href="https://nbdev.fast.ai/api/cli.html#nbdev_new">nbdev_new</a> trên terminal</li>
+<li>Sau khi khởi tạo nbdev, một số file và folder được tạo ra:<br>
+<code>.github</code> Chứa workflow cho CI.<br>
+<code>_proc</code><br>
+<code>nbs</code> Là viết tắt của “notebook source”, đây là nơi làm việc của các file notebook <code>.ipynb</code><br>
+<code>test_nbdev</code> Sau khi xử lý các tệp notebook, các tệp <code>.py</code> sẽ được export vô lib này (tên folder này dựa trên tên repository)<br>
+<code>.gitignore</code> Chỉ định file/folder không mong muốn khi push lên github<br>
+<code>LICENSE</code><br>
+<code>MANIFEST.in</code><br>
+<code>README.md</code> File này được đồng bộ từ <code>nbs/index.ipynb</code>, nếu muốn edit file ‘README.md’ hãy vô file ‘index.ipynb’ edit<br>
+<code>setting.ini</code> Chứa các thông số cấu hình cho project như tên tác giả, tên dự án, version …<br>
+<code>setting.py</code><br>
+<img src="03_how_to_use_nbdev_files/figure-html/42ddab2e-1-image.png" class="img-fluid"></li>
+</ul>
+</section>
+<section id="push-repository-đã-được-khởi-tạo-nbdev-lên-github" class="level3">
+<h3 class="anchored" data-anchor-id="push-repository-đã-được-khởi-tạo-nbdev-lên-github">4. Push repository đã được khởi tạo nbdev lên GitHub</h3>
+<ul>
+<li>Các command sau để push lên github:<br>
+<code>git add .</code><br>
+<code>git commit -m 'chore: initial commit'</code><br>
+<code>git push</code><br>
+</li>
+<li>Sau khi push reposirory nbdev của bạn lên GitHub, điều hướng đến <code>Actions</code>, nếu bạn sẽ thấy <code>CI</code> bị Fail. Điều này là do GitHub mặc định giới hạn PAT permission, hãy nhấp vào <strong>settings</strong> trong repository <code>Settings &gt; Actions &gt; General &gt; Workflow permissions &gt; Read and write permission &gt; Save</code>. Bây giờ CI của bạn sẽ chạy lại và hoạt động ngay.</li>
+</ul>
+</section>
+<section id="kích-hoạt-github-pages" class="level3">
+<h3 class="anchored" data-anchor-id="kích-hoạt-github-pages">5. Kích hoạt GitHub Pages <a href="https://nbdev.fast.ai/tutorials/tutorial.html#enable-github-pages"></a></h3>
+<ul>
+<li><p>Bạn cần <a href="https://nbdev.fast.ai/tutorials/tutorial.html#enable-github-pages">kích hoạt</a> GitHub Pages cho repository của mình bằng cách nhấp vào <strong>settings</strong> trong repository <code>Setting &gt; Pages &gt; Branch</code> chọn branch bạn muốn và <code>Save</code>. <img src="03_how_to_use_nbdev_files/figure-html/9307299b-1-3.png" class="img-fluid"></p></li>
+<li><p>Việc kích hoạt GitHub Pages này sẽ tạo ra một pages docs trông beautiful như này <a href="https://hoangtrung020541.github.io/nbdev_cards/">nbdev page example</a>. <img src="03_how_to_use_nbdev_files/figure-html/ffed0657-1-image.png" class="img-fluid"></p></li>
+</ul>
+</section>
+<section id="các-bước-cơ-bản-để-build-một-nbdev-repository" class="level3">
+<h3 class="anchored" data-anchor-id="các-bước-cơ-bản-để-build-một-nbdev-repository">6. Các bước cơ bản để build một nbdev repository</h3>
+<ul>
+<li><p><strong>Install hooks</strong> sử dụng command <a href="https://nbdev.fast.ai/api/clean.html#nbdev_install_hooks">nbdev_install_hooks</a>.<br>
+Hooks đảm bảo rằng các kiểm tra và các processes cần thiết được chạy mỗi khi có thay đổi được thực hiện trên kho repository, như chuyển đổi các file notebooks thành file Python và kiểm tra syntax errors, giúp giữ code và repository được tổ chức và nhất quán.</p></li>
+<li><p><strong>Edit .ipynb</strong><br>
+Truy cập vào folder <code>/nbs</code> để tạo và edit các file notebook ở đây, chi tiết các viết nbdev notebook sẽ được nêu trong phần <font color="blue">Directives</font>.</p></li>
+<li><p><strong>Build library</strong> sử dụng command <a href="https://nbdev.fast.ai/api/doclinks.html#nbdev_export">nbdev_export</a>.<br>
+Sau khi viết xong file notebook, bạn hãy sử dụng command này giúp convert từ file Jupyter Notebook <code>.ipynb</code> thành file Python <code>.py</code> và sử dụng làm library trong project, giúp code có thể reusable, maintainable và dễ dàng tích hợp vào các project khác. Ngoài ra nbdev còn convert file <code>.ipynb</code> hiển thị trên GitHub Page (khi push).<br>
+Note: Bạn cũng có thể sử dụng <code>import nbdev; nbdev.nbdev_export()</code> tại cuối mỗi file notebook để export thay vì sử dụng command.</p></li>
+</ul>
+<blockquote class="blockquote">
+<p>Ví dụ trong hình dưới, đây là file <code>00_card.ipynb</code> trong folder <code>/nbs</code> <img src="03_how_to_use_nbdev_files/figure-html/b702a3cd-1-image-2.png" class="img-fluid"></p>
+</blockquote>
+<blockquote class="blockquote">
+<p>Và đây là kết quả khi sử dụng command <a href="https://nbdev.fast.ai/api/doclinks.html#nbdev_export">nbdev_export</a>, nbdev sẽ convert file <code>/nbs/00_card.ipynb</code> thành file <code>/nbdev_cards/card.py</code> (cụ thể tại những cell có <code>#| export</code> trên notebook sẽ được convert qua file <code>.py</code>) <img src="03_how_to_use_nbdev_files/figure-html/3e9c7ea8-1-image.png" class="img-fluid"></p>
+</blockquote>
+<blockquote class="blockquote">
+<p>Ngoài ra file <code>00_card.ipynb</code> cũng sẽ được update lên <a href="https://hoangtrung020541.github.io/nbdev_cards/card.html">GitHub Page</a> khi push repository lên github thông qua <code>CI</code> của nbdev. Trong đó các số thứ tự trước tên file <code>ipynb</code> sẽ quyết định thứ tự của chúng trên page, file <code>index.ipynb</code> sẽ nằm đầu tiên (chi tiết các tạo page sẽ được nêu trong phần <font color="blue">Create And Edit Page</font>). <img src="03_how_to_use_nbdev_files/figure-html/5f3b670f-1-6.png" class="img-fluid"></p>
+</blockquote>
+<ul>
+<li><p><strong>Install package</strong> sử dụng command <code>pip install -e '.[dev]'</code>.<br>
+Command này được sử dụng trong quá trình develop một Python package để cho phép package được cài đặt và sử dụng trong environment trực tiếp trong khi source code đang được chỉnh sửa, thường được sử dụng sau khi bạn export một file notebook.<br>
+<em>Note: Nếu bạn thực hiện các thay đổi đối với code mà không ảnh hưởng đến quá trình install (chẳng hạn như thêm các feature mới hoặc fix bug), bạn có thể không cần phải chạy lệnh này.</em></p></li>
+<li><p><strong>Preview docs</strong> sử dụng command <a href="https://nbdev.fast.ai/api/quarto.html#nbdev_preview">nbdev_preview</a>.<br>
+Sau khi hoàn chỉnh một file notebook, khi run command này terminal sẽ hiển thị một browser link ở định dạng HTML chạy trên local (ví dụ như <code>http://localhost:3744/</code>). Click vào link để xem trước các bản notebook như thế nào trước khi được đưa lên GitHub Page.</p></li>
+<li><p><strong>Prepare change</strong> sử dụng command <code>nbdev_prepare</code>.<br>
+Sử dụng trước khi commit hoặc push lên github, để đảm bảo các module của bạn được export đúng cách và các bài test được vượt qua. Trong đó command <code>nbdev_prepare</code>đóng gói các lệnh sau:<br>
+<a href="https://nbdev.fast.ai/api/doclinks.html#nbdev_export">nbdev_export</a>: Build file<code>.py</code> module từ Jupyter notebooks<br>
+<a href="https://nbdev.fast.ai/api/test.html#nbdev_test">nbdev_test</a>: Tests các file để kiểm tra bug<br>
+<a href="https://nbdev.fast.ai/api/clean.html#nbdev_clean">nbdev_clean</a>: Loại bỏ các output thừa trong notebook để tạo ra một phiên bản notebook “sạch” hơn để đăng trên Github<br>
+<a href="https://nbdev.fast.ai/api/quarto.html#nbdev_readme">nbdev_readme</a>: Updates file README.md từ file <code>index.ipynb</code>.</p></li>
+<li><p><strong>Push lên Github</strong><br>
+Lỗi có thể xảy ra vì bạn quên chạy command <code>nbdev_prepare</code>. Vì vậy, hãy nhớ chạy command này trước khi push lên GitHub, các command để push github:<br>
+<code>git add .</code><br>
+<code>git commit -m &lt;message&gt;</code><br>
+<code>git push</code></p></li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">Copyright 2023, Trung Hoang</div>   
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/hoangtrung020541/nbdev_beautiful">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/">
+      <i class="bi bi-twitter" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+</body></html>

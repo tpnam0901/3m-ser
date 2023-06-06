@@ -1,0 +1,9 @@
+project:
+  output-dir: docs
+
+website:
+  title: "TODO"
+  site-url: "https://TODO.github.io/TODO"
+  description: "TODO"
+  repo-branch: main
+  repo-url: "https://github.com/TODO/TODO"

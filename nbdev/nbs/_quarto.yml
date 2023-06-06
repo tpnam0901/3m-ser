@@ -1,0 +1,73 @@
+project:
+  type: website
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    css: styles.css
+    toc: true
+
+
+website:
+  favicon: img.png
+  twitter-card: true
+  reader-mode: true
+  open-graph: true
+  repo-actions: [issue]
+  navbar:
+    title: TODO
+    background: primary
+    search: true
+    left:
+      - text: "Home"
+        file: index.ipynb
+      - text: "Github"
+        url: https://github.com/namphuongtran9196/TODO
+  page-footer: 
+    left: "Copyright 2023, Trung Hoang" 
+    right: 
+      - icon: github
+        href: https://github.com/namphuongtran9196/TODO
+      - icon: twitter 
+        href: https://twitter.com/ 
+    background: Gray
+    foreground: White
+    border: false
+
+  sidebar:
+    tools:
+      - icon: facebook
+        href: https://www.facebook.com/
+      - icon: discord
+        href: https://discord.com/
+      - icon: twitter
+        href: https://twitter.com
+      - icon: github
+        menu:
+          - text: Source Code
+            url:  https://github.com/namphuongtran9196/TODO
+          - text: Report a Bug
+            url:  https://github.com/namphuongtran9196/TODO/issues
+    style: "docked"
+    search: true
+    
+    contents:
+      - section: "Quick start"
+        contents:
+          - 03_how_to_use_nbdev.ipynb
+          - 04_directives.ipynb
+          - 05_create_page.ipynb
+          - 06_beautiful_page.ipynb
+      - text: "---"
+      - section: "Examples"
+        contents:
+          - 00_card_overview.ipynb
+          - 01_card.ipynb
+          - 02_desk.ipynb
+      - text: "---"
+      - 07_test.ipynb
+
+#metadata-files: [nbdev.yml, sidebar.yml]
+metadata-files: [nbdev.yml]
