@@ -19,7 +19,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 
 
 class TorchTrainer(ABC, nn.Module):
-    log_dir: str = "logs"
+    def __init__(self, log_dir: str = "logs"):
+        super().__init__()
+        self.log_dir = log_dir
 
     def predict(self, inputs: Union[torch.Tensor, Dict, List]) -> Union[torch.Tensor, Dict, List]:
         """
@@ -85,7 +87,7 @@ class TorchTrainer(ABC, nn.Module):
                 # Callbacks
                 if callbacks is not None:
                     for callback in callbacks:
-                        callback(self, step, epoch, train_log, isValPhase=False)
+                        callback(self, step, epoch, train_log, isValPhase=False, logger=logger)
         for key, value in epoch_log.items():
             logger.info(f"Epoch {epoch} - {key}: {np.mean(value):.4f}")
         if eval_data is not None:
@@ -113,7 +115,7 @@ class TorchTrainer(ABC, nn.Module):
             if callbacks is not None:
                 eval_logs = {key: np.mean(value) for key, value in eval_logs.items()}
                 for callback in callbacks:
-                    callback(self, step, epoch, eval_logs, isValPhase=True)
+                    callback(self, step, epoch, eval_logs, isValPhase=True, logger=logger)
         return step
 
     def evaluate(
@@ -192,7 +194,7 @@ class TorchTrainer(ABC, nn.Module):
             path (str): Path to the checkpoint directory.
             step (int, optional): Current step. Defaults to None.
         """
-        ckpt_path = os.path.join(path, "checkpoint_{}.pt".format(step))
+        ckpt_path = os.path.join(path, "checkpoint_{}.pth".format(step))
         torch.save(self.network.state_dict(), ckpt_path)
         return ckpt_path
 

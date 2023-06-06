@@ -14,6 +14,7 @@ class Callback(ABC):
         global_epoch: int,
         logs: Dict,
         isValPhase: bool = False,
+        logger: logging = None,
     ):
         """Abstract method to be implemented by the user.
 
@@ -28,6 +29,7 @@ class Callback(ABC):
                                                                 "some_custom_metric": 0.5
                                                             }
             isValPhase (bool, optional): Whether the callback is called during the validation phase. Defaults to False.
+            logger (logging, optional): The logger to be used. Defaults to None.
         """
         pass
 
@@ -47,6 +49,7 @@ class CheckpointsCallback(Callback):
             save_freq (int, optional): The frequency at which checkpoints will be saved. Defaults to 1000.
             keep_one_only (bool, optional): Whether to keep only the last checkpoint. Defaults to True.
             save_best_val (bool, optional): Whether to save the best model based on the validation loss. Defaults to False.
+
         """
         self.checkpoint_dir = checkpoint_dir
         os.makedirs(self.checkpoint_dir, exist_ok=True)
@@ -70,6 +73,7 @@ class CheckpointsCallback(Callback):
         global_epoch: int,
         logs: Dict,
         isValPhase: bool = False,
+        logger: logging = None,
     ):
         """Abstract method to be implemented by the user.
 
@@ -84,33 +88,35 @@ class CheckpointsCallback(Callback):
                                                                 "some_custom_metric": 0.5
                                                             }
             isValPhase (bool, optional): Whether the callback is called during the validation phase. Defaults to False.
+            logger (logging, optional): The logger to be used. Defaults to None.
         """
         if not isValPhase:
             if global_step % self.save_freq == 0:
+                logger.info("Saving model at step {}".format(global_step))
                 ckpt_path = trainer.save(self.checkpoint_dir, global_step)
                 self.keep.append(ckpt_path)
                 if len(self.keep) > self.max_to_keep:
-                    logging.info(f"Deleting checkpoint {self.keep[0]}")
+                    logger.info(f"Deleting checkpoint {self.keep[0]}")
                     ckpt_to_delete = self.keep.pop(0)
-                    shutil.rmtree(ckpt_to_delete)
+                    os.remove(ckpt_to_delete)
 
         elif isValPhase and self.save_best_val:
             for k, v in logs.items():
                 if k not in self.best_val:
+                    logger.info("Model {} improve from inf to {}, Saving model...".format(k, v))
                     self.best_val[k] = v
-                    logging.info(f"Saving best model based on {k} = {v}")
                     os.makedirs(os.path.join(self.checkpoint_dir, "best_{}".format(k)), exist_ok=True)
                     trainer.save(os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0)
                 else:
                     if k.startswith("loss"):
                         if v < self.best_val[k]:
+                            logger.info("Model {} improve from {} to {}, Saving model...".format(k, self.best_val[k], v))
                             self.best_val[k] = v
-                            logging.info(f"Saving best model based on {k} = {v}")
                             os.makedirs(os.path.join(self.checkpoint_dir, "best_{}".format(k)), exist_ok=True)
                             trainer.save(os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0)
                     else:
                         if v > self.best_val[k]:
+                            logger.info("Model {} improve from {} to {}, Saving model...".format(k, self.best_val[k], v))
                             self.best_val[k] = v
-                            logging.info(f"Saving best model based on {k} = {v}")
                             os.makedirs(os.path.join(self.checkpoint_dir, "best_{}".format(k)), exist_ok=True)
                             trainer.save(os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0)
