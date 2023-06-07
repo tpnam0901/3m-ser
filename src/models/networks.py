@@ -38,11 +38,17 @@ class MMSERA(nn.Module):
         self.vggish.to(device)
 
         # Fusion module
-        self.text_attention = nn.MultiheadAttention(embed_dim=768, num_heads=num_attention_head, dropout=dropout)
+        self.text_attention = nn.MultiheadAttention(
+            embed_dim=768, num_heads=num_attention_head, dropout=dropout, batch_first=True
+        )
         self.text_linear = nn.Linear(768, 128)
+        self.text_layer_norm = nn.LayerNorm(128)
 
-        self.fusion_attention = nn.MultiheadAttention(embed_dim=128, num_heads=num_attention_head, dropout=dropout)
+        self.fusion_attention = nn.MultiheadAttention(
+            embed_dim=128, num_heads=num_attention_head, dropout=dropout, batch_first=True
+        )
         self.fusion_linear = nn.Linear(128, 128)
+        self.fusion_layer_norm = nn.LayerNorm(128)
 
         self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(128, 64)
@@ -61,6 +67,7 @@ class MMSERA(nn.Module):
             text_embeddings, text_embeddings, text_embeddings, average_attn_weights=False
         )
         text_linear = self.text_linear(text_attention)
+        text_norm = self.text_layer_norm(text_linear)
 
         # Check if vggish outputs is (128) or (num_samples, 128)
         if len(audio_embeddings.size()) == 1:
@@ -69,19 +76,20 @@ class MMSERA(nn.Module):
         # Expand the audio embeddings to match the text embeddings
         audio_embeddings = audio_embeddings.unsqueeze(0)
         # Concatenate the text and audio embeddings
-        fusion_embeddings = torch.cat((text_linear, audio_embeddings), 1)
+        fusion_embeddings = torch.cat((text_norm, audio_embeddings), 1)
 
         # Selt-attention module
         fusion_attention, fusion_attn_output_weights = self.fusion_attention(
             fusion_embeddings, fusion_embeddings, fusion_embeddings, average_attn_weights=False
         )
         fusion_linear = self.fusion_linear(fusion_attention)
+        fusion_norm = self.fusion_layer_norm(fusion_linear)
 
         # Get classification token from the fusion module
-        cls_token_final_fusion_linear = fusion_linear[:, 0, :]
+        cls_token_final_fusion_norm = fusion_norm[:, 0, :]
 
         # Classification head
-        x = self.dropout(cls_token_final_fusion_linear)
+        x = self.dropout(cls_token_final_fusion_norm)
         x = self.linear(x)
         x = nn.functional.leaky_relu(x)
         out = self.classifer(x)

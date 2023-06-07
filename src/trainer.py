@@ -20,6 +20,7 @@ class Trainer(TorchTrainer):
         self.network.to(self.device)
 
     def train_step(self, batch: Dict[str, Tensor]) -> Dict[str, Tensor]:
+        self.network.train()
         self.optimizer.zero_grad()
 
         # Prepare batch
@@ -46,6 +47,7 @@ class Trainer(TorchTrainer):
         return {"loss": loss.detach().cpu().item(), "acc": accuracy.detach().cpu().item()}
 
     def test_step(self, batch: Dict[str, Tensor]) -> Dict[str, Tensor]:
+        self.network.eval()
         # Prepare batch
         text, label, sprectrome = batch["text"], batch["label"], batch["sprectrome"]
         label = torch.tensor([int(label)])

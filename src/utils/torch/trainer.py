@@ -57,7 +57,7 @@ class TorchTrainer(ABC, nn.Module):
             logger (logging.Logger, optional): logger used for logging. Defaults to None.
             callbacks (List[Callback], optional): List of callbacks. Defaults to None.
         """
-        self.train()
+        self.network.train()
         if logger is None:
             logger = logging
 
@@ -93,7 +93,7 @@ class TorchTrainer(ABC, nn.Module):
         for key, value in epoch_log.items():
             logger.info(f"Epoch {epoch} - {key}: {np.mean(value):.4f}")
         if eval_data is not None:
-            self.eval()
+            self.network.eval()
             logger.info("Performing validation...")
             # First pass to retrieve keys
             val_log = self.test_step(batch)
@@ -134,7 +134,7 @@ class TorchTrainer(ABC, nn.Module):
         Returns:
             Dict: The evaluation metrics in a dictionary with the metric name as key and the metric value as value.
         """
-        self.eval()
+        self.network.eval()
         if logger is None:
             logger = logging
         test_logs = {}
