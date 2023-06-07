@@ -36,6 +36,9 @@ class MMSERA(nn.Module):
         # Audio module
         self.vggish = vggish()
         self.vggish.to(device)
+        # Freeze the audio module
+        for param in self.vggish.parameters():
+            param.requires_grad = True
 
         # Fusion module
         self.text_attention = nn.MultiheadAttention(
@@ -56,11 +59,11 @@ class MMSERA(nn.Module):
 
     def forward(self, input_ids, audio, output_attentions=False):
         # Text processing
-        input_ids = input_ids.long()
         text_embeddings = self.bert(input_ids).last_hidden_state
 
         # Audio processing
         audio_embeddings = self.vggish(audio)
+
         ## Fusion Module
         # Self-attention to reduce the dimensionality of the text embeddings
         text_attention, text_attn_output_weights = self.text_attention(
@@ -75,6 +78,7 @@ class MMSERA(nn.Module):
 
         # Expand the audio embeddings to match the text embeddings
         audio_embeddings = audio_embeddings.unsqueeze(0)
+
         # Concatenate the text and audio embeddings
         fusion_embeddings = torch.cat((text_norm, audio_embeddings), 1)
 
@@ -93,8 +97,10 @@ class MMSERA(nn.Module):
         x = self.linear(x)
         x = nn.functional.leaky_relu(x)
         out = self.classifer(x)
+
         if output_attentions:
             return out, [text_attn_output_weights, fusion_attn_output_weights]
+
         return out
 
 
