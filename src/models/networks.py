@@ -1,8 +1,5 @@
 import torch
 import torch.nn as nn
-
-# from cca_zoo.deepmodels import DCCA
-# from cca_zoo.deepmodels.objectives import MCCA
 from torchvggish import vggish
 from transformers import BertConfig, BertModel
 
