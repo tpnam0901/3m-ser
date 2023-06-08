@@ -14,8 +14,10 @@ from torchsummary import summary
 from . import optimizers
 from .callbacks import Callback
 
-logging.getLogger().setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 class TorchTrainer(ABC, nn.Module):
@@ -55,7 +57,7 @@ class TorchTrainer(ABC, nn.Module):
             logger (logging.Logger, optional): logger used for logging. Defaults to None.
             callbacks (List[Callback], optional): List of callbacks. Defaults to None.
         """
-        self.train()
+        self.network.train()
         if logger is None:
             logger = logging
 
@@ -91,7 +93,7 @@ class TorchTrainer(ABC, nn.Module):
         for key, value in epoch_log.items():
             logger.info(f"Epoch {epoch} - {key}: {np.mean(value):.4f}")
         if eval_data is not None:
-            self.eval()
+            self.network.eval()
             logger.info("Performing validation...")
             # First pass to retrieve keys
             val_log = self.test_step(batch)
@@ -132,7 +134,7 @@ class TorchTrainer(ABC, nn.Module):
         Returns:
             Dict: The evaluation metrics in a dictionary with the metric name as key and the metric value as value.
         """
-        self.eval()
+        self.network.eval()
         if logger is None:
             logger = logging
         test_logs = {}
@@ -270,12 +272,17 @@ class TorchTrainer(ABC, nn.Module):
 
         assert isinstance(callbacks, list) or callbacks is None, "Callbacks must be a list of Callback objects"
 
-        # Logger
-        logger = logging.getLogger("Training")
-
         # Init mlflow
-        self.log_dir = os.path.join(self.log_dir, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        self.log_dir = os.path.join(self.log_dir, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
         os.makedirs(self.log_dir, exist_ok=True)
+        # Logger
+        logging.getLogger().setLevel(logging.INFO)
+        file_handler = logging.FileHandler(os.path.join(self.log_dir, "train.log"))
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logger = logging.getLogger("Training")
+        logger.addHandler(file_handler)
+        logger.addHandler(logging.StreamHandler())
+
         mlflow.set_tracking_uri(uri=f'file://{os.path.abspath(os.path.join(self.log_dir, "mlruns"))}')
         global_step = 0
         # Start training

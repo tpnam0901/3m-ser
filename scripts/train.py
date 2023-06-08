@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -6,7 +7,6 @@ sys.path.append(lib_path)
 
 import argparse
 import datetime
-import logging
 import random
 
 import numpy as np
@@ -26,10 +26,6 @@ random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
-
-
-logging.getLogger().setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def main(opt: Config):
@@ -58,13 +54,13 @@ def main(opt: Config):
     # Build dataset
     train_ds, test_ds = build_train_test_dataset(opt.data_root)
 
-    trainer = Trainer(network=network, tokenizer=tokenizer, criterion=nn.CrossEntropyLoss())
+    trainer = Trainer(network=network, tokenizer=tokenizer, criterion=nn.CrossEntropyLoss(), log_dir=opt.checkpoint_dir)
     # Build optimizer and criterion
     optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma)
 
     ckpt_callback = CheckpointsCallback(
-        checkpoint_dir=opt.checkpoint_dir,
+        checkpoint_dir=weight_dir,
         save_freq=opt.save_freq,
         max_to_keep=3,
         save_best_val=True,
