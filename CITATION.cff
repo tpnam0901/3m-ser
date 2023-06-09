@@ -66,8 +66,8 @@ abstract: >-
   effectiveness of incorporating an extra fusion module in
   multi-modal learning.
 
-# preferred-citation:
-#   type: conference-paper
+preferred-citation:
+  type: conference-paper
 #   authors:
 #   - given-names: Nam
 #     family-names: Tran Phuong
