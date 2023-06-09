@@ -1,12 +1,10 @@
 cff-version: 1.2.0
+message: >-
+    If you use 3M-SER in your research, please cite our work as below.
 preferred-citation:
   type: conference-paper
-  title: >-
-    Multi-modal Speech Emotion Recognition: Improving Accuracy
-    through Fusion of VGGish and BERT Features with Multi-head
-    Attention
-  message: >-
-    If you use 3M-SER in your research, please cite our work as below.
+  doi: ""
+  url: "https://github.com/namphuongtran9196/3m-ser"
   authors:
     - given-names: Nam
       family-names: Tran Phuong
@@ -33,63 +31,27 @@ preferred-citation:
       email: trananhkhoa@tdtu.edu.vn
       orcid: 'https://orcid.org/0000-0003-4649-8417'
       affiliation: Ton Duc Thang University, Ho Chi Minh City, Vietnam
+  title: >-
+      Multi-modal Speech Emotion Recognition: Improving Accuracy
+      through Fusion of VGGish and BERT Features with Multi-head
+      Attention
+  conference:
+    name: "9th EAI International Conference on Industrial Networks and Intelligent Systems (EAI INISCOM 2023)"
+    city: "Ho Chi Minh City"
+    region: "Ho Chi Minh"
+    country: "VietNam"
+  month: August 2-3
+  year: 2023
+  # notes: LLNL-CONF-669890
 
-  keywords:
-    - emotion
-    - emotion-analysis
-    - emotion-detection
-    - emotion-recognition
-    - 3m-ser
-    - ser
-    - emotion-classification
-  license: Unlicense
-  repository-code: 'https://github.com/namphuongtran9196/3m-ser'
-  abstract: >-
-    Recent research has shown that multi-modal learning is a
-    successful method for enhancing classification performance
-    by mixing several forms of input, notably in
-    speech-emotion recognition (SER) tasks. However, the
-    difference between the modalities may affect SER
-    performance. To overcome this problem, a novel approach
-    for multi-modal SER called 3M-SER is proposed in this
-    paper. The 3M-SER leverages multi-head attention to fuse
-    information from multiple feature embeddings, including
-    audio and text features. The 3M-SER approach is based on
-    the SERVER approach but includes an additional fusion
-    module that improves the integration of text and audio
-    features, leading to improved classification performance.
-    To further enhance the correlation between the modalities,
-    a LayerNorm is applied to audio features prior to fusion.
-    Our approach achieved an unweighted accuracy (UA) and
-    weighted accuracy (WA) of 79.96% and 80.66%, respectively,
-    on the IEMOCAP benchmark dataset. This indicates that the
-    proposed approach is better than SERVER and recent methods
-    with similar approaches. In addition, it highlights the
-    effectiveness of incorporating an extra fusion module in
-    multi-modal learning.
-
-
-#   authors:
-#   - given-names: Nam
-#     family-names: Tran Phuong
-#     orcid: 'https://orcid.org/0009-0009-6551-9106'
-#   - given-names: Duong
-#     family-names: Vu Thi Thuy
-#     orcid: 'https://orcid.org/0000-0001-8614-8732'
-#   - given-names: Truong
-#     family-names: Pham Nhat
-#     orcid: 'https://orcid.org/0000-0002-8086-6722'
-#   - given-names: Duc
-#     family-names: Dang Ngoc Minh
-#     orcid: 'https://orcid.org/0000-0001-9302-3129'
-#   - given-names: Anh-Khoa
-#     family-names: Tran
-#     orcid: 'https://orcid.org/0000-0003-4649-8417'
-#   conference:
-#     name: "9th EAI International Conference on Industrial Networks and Intelligent Systems (EAI INISCOM 2023)"
-#     date-start: 2023-08-02
-#     date-end: 2023-08-03
-#     city: "Ho Chi Minh City"
-#     country: "VietNam"
+  # keywords:
+  #   - emotion
+  #   - emotion-analysis
+  #   - emotion-detection
+  #   - emotion-recognition
+  #   - 3m-ser
+  #   - ser
+  #   - emotion-classification
+  # license: Unlicense
   
   
