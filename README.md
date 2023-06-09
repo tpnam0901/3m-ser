@@ -63,13 +63,7 @@ cd scripts && python main.py train
 - We use the [Unlicense](https://unlicense.org/) license. You can use it for any purpose.
 
 ## Citation
-If you use this code or part of it, please cite the following papers:
-```
-@inproceedings{
-
-}
-```
-On GitHub, you can copy this citation in APA or BibTeX format via the "Cite this repository" button. Or, see the comments in CITATION.cff for the raw BibTeX.
+If you use this code or part of it, please cite our work. On GitHub, you can copy this citation in APA or BibTeX format via the "Cite this repository" button. Or, see the comments in CITATION.cff for the raw BibTeX.
 
 ## References
 
