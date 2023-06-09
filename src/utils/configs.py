@@ -1,7 +1,7 @@
 import importlib
 import sys
 
-from src.configs.base import BaseConfig
+from configs.base import BaseConfig
 
 
 def get_options(

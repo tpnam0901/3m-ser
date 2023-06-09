@@ -27,37 +27,53 @@
 ## Key Features
 - 3M-SER - a multi-modal speech emotion recognition model that uses multi-head attention fusion of multi-feature embeddings to learn the relationship between speech and emotion.
 ## How To Use
-- Clone this repository
+- Clone this repository 
 ```bash
-git clone https://github.com/namphuongtran9196/3m-ser.git 
+git clone https://github.com/namphuongtran9196/3m-ser-private.git 
 cd 3m-ser
 ```
-- Install requirements
+- Create a conda environment and install requirements
 ```bash
-conda create -n 3m-ser python=3.7 -y
+conda create -n 3m-ser python=3.8 -y
 conda activate 3m-ser
+conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia -y
 pip install -r requirements.txt
 ```
-- Dataset used in this project is IEMOCAP. You can download it [here](https://sail.usc.edu/iemocap/iemocap_release.htm). Or you can download our preprocessed dataset [here](https://drive.google.com/drive/folders/1-0Z3Q4QZ3Z2Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z?usp=sharing).
+- There are some error with torchvggish when using with GPU. Please change the code at line 58,59 in file torchvggish/model.py to accept the GPU:
+```python
+        self._pca_matrix = torch.as_tensor(params["pca_eigen_vectors"]).float().cuda()
+        self._pca_means = torch.as_tensor(params["pca_means"].reshape(-1, 1)).float().cuda()
+        # Or you can set somethings like .to(device) to make it flexible
+```
+- Dataset used in this project is IEMOCAP. You can download it [here](https://sail.usc.edu/iemocap/iemocap_release.htm). Or you can download our preprocessed dataset [here](https://github.com/namphuongtran9196/3m-ser-private/releases).
 
 - Preprocess data
 ```bash
-python preprocess.py --data_path <path_to_iemocap_dataset> --output_path <path_to_output_folder>
+cd scripts && python preprocess.py --data_root <path_to_iemocap_dataset> --output_dir <path_to_output_folder>
 ```
 
-- Before starting training, you need to modify the config file in the config folder. You can refer to the config file in the config folder for more details.
+- Before starting training, you need to modify the [config file](./src/configs/base.py) in the config folder. You can refer to the config file in the config folder for more details.
 ```bash
-python main.py train
+cd scripts && python main.py train
 ```
 
 ## Download
-- We provide some pre-trained models which achieve the results as in the paper. You can download them [here](https://drive.google.com/drive/folders/1-0Z3Q4QZ3Z2Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z?usp=sharing).
+- We provide some pre-trained models which achieve the results as in the paper. You can download them [here](https://github.com/namphuongtran9196/3m-ser-private/releases).
 ## License
 - We use the [Unlicense](https://unlicense.org/) license. You can use it for any purpose.
 
 ## Citation
+If you use this code or part of it, please cite the following papers:
+```
+@inproceedings{
+
+}
+```
 
 ## References
+
+[1] Nhat Truong Pham, SERVER: Multi-modal Speech Emotion Recognition using Transformer-based and Vision-based Embeddings (ICIIT), 2023. Available https://github.com/nhattruongpham/mmser.git
+
 ---
 
 > GitHub [@namphuongtran9196](https://github.com/namphuongtran9196) &nbsp;&middot;&nbsp;

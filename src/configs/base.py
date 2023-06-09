@@ -49,9 +49,9 @@ class Config(BaseConfig):
             setattr(self, key, value)
 
     def set_args(self, **kwargs):
-        self.num_epochs = 1000
-        self.checkpoint_dir = "/home/kuhaku/Code/EmotionClassification/code/3m-ser/checkpoints"
-        self.save_freq = 100
+        self.num_epochs = 200
+        self.checkpoint_dir = "checkpoints"
+        self.save_freq = 4000
         self.batch_size = 1
 
         # Learning rate
@@ -60,7 +60,7 @@ class Config(BaseConfig):
         self.learning_rate_gamma = 0.1
 
         # Dataset
-        self.data_root = "/home/kuhaku/Code/EmotionClassification/code/3m-ser/data"
+        self.data_root = "data"
 
         # Model
         self.num_classes = 4

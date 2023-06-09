@@ -1,243 +1,322 @@
 import datetime
 import logging
 import os
-from typing import Dict, List, Tuple
+from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import mlflow
 import numpy as np
 import torch
-import torch.optim as optim
 import tqdm
 from torch import nn
-from transformers import BertTokenizer
+from torchsummary import summary
 
-from src.data.dataloader import build_train_test_dataset
-from src.models import networks
-from src.utils.loggings import get_log_text
+from . import optimizers
+from .callbacks import Callback
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
-class Trainer:
-    def __init__(self, opt):
-        self.opt = opt
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # Model
-        try:
-            model_fn = getattr(networks, opt.model_type)
-        except AttributeError:
-            raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
-        self.model = model_fn(
-            num_classes=opt.num_classes,
-            num_attention_head=opt.num_attention_head,
-            dropout=opt.dropout,
-        )
+class TorchTrainer(ABC, nn.Module):
+    def __init__(self, log_dir: str = "logs"):
+        super().__init__()
+        self.log_dir = log_dir
 
-        self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-
-        # Preapre the checkpoint directory
-        self.opt.checkpoint_dir = self.checkpoint_dir = os.path.join(
-            os.path.abspath(opt.checkpoint_dir), opt.model_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        )
-        self.log_dir = os.path.join(self.checkpoint_dir, "logs")
-        self.weight_dir = os.path.join(self.checkpoint_dir, "weights")
-        os.makedirs(self.log_dir, exist_ok=True)
-        os.makedirs(self.weight_dir, exist_ok=True)
-        self.init_logger()
-        self.opt.save(self.opt)
-
-        # Build dataset
-        self.train_ds, self.test_ds = build_train_test_dataset(opt.data_root)
-
-        # Build optimizer and criterion
-        self.optimizer = optim.Adam(params=self.model.parameters(), lr=opt.learning_rate)
-        self.criterion = nn.CrossEntropyLoss()
-        self.lr_scheduler = optim.lr_scheduler.StepLR(
-            self.optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma
-        )
-
-    def init_logger(self):
-        """Create logger for training with two handlers: one for writing to a file and one for writing to the console.
-        The logger has two loggers: hide and show. hide is used for writing the loss writing the loss and
-        metrics to a file. show is used for writing the loss and metrics to both the file and the console.
-        The log file is saved in the log_dir.
+    def predict(self, inputs: Union[torch.Tensor, Dict, List]) -> Union[torch.Tensor, Dict, List]:
         """
-        logger = logging.getLogger("training")
-        logger.setLevel(logging.INFO)
-        logging.basicConfig(format="%(asctime)s - Training: %(message)s")
-        file_handler = logging.FileHandler(os.path.join(self.log_dir, "log.txt"))
-        logger.addHandler(file_handler)
 
-    def train_step(self, batch):
-        self.optimizer.zero_grad()
+        Args:
+            inputs (Union[torch.Tensor, Dict, List]): Inputs to the model
 
-        # Prepare batch
-        text, label, sprectrome = batch["text"], batch["label"], batch["sprectrome"]
-        label = torch.tensor([int(label)])
-        input_ids = torch.tensor(self.tokenizer.encode(text, add_special_tokens=True)).unsqueeze(0)
-
-        # Move inputs to cpu or gpu
-        sprectrome = sprectrome.to(self.device)
-        label = label.to(self.device)
-        input_ids = input_ids.to(self.device)
-
+        Returns:
+            Union[torch.Tensor, Dict, List]: Predictions
+        """
+        # Set model to eval mode
+        self.eval()
         # Forward pass
-        output = self.model(input_ids, sprectrome)
-        loss = self.criterion(output, label)
-
-        # Backward pass
-        loss.backward()
-        self.optimizer.step()
-
-        # Calculate accuracy
-        _, preds = torch.max(output, 1)
-        accuracy = torch.mean((preds == label).float())
-        return loss.detach().cpu().item(), accuracy.detach().cpu().item()
-
-    def eval_step(self, batch):
-        # Prepare batch
-        text, label, sprectrome = batch["text"], batch["label"], batch["sprectrome"]
-        label = torch.tensor([int(label)])
-        input_ids = torch.tensor(self.tokenizer.encode(text, add_special_tokens=True)).unsqueeze(0)
-
-        # Move inputs to cpu or gpu
-        sprectrome = sprectrome.to(self.device)
-        label = label.to(self.device)
-        input_ids = input_ids.to(self.device)
-
-        with torch.no_grad():
-            # Forward pass
-            output = self.model(input_ids, sprectrome)
-            loss = self.criterion(output, label)
-            # Calculate accuracy
-            _, preds = torch.max(output, 1)
-            accuracy = torch.mean((preds == label).float())
-        return loss.detach().cpu().item(), accuracy.detach().cpu().item()
+        return self.forward(inputs)
 
     def train_epoch(
         self,
-        train_ds: List,
-        global_step: int,
-        global_epoch: int,
-    ) -> Tuple[int, int]:
-        """Train the model for one epoch.
+        step: int,
+        epoch: int,
+        train_data: Iterable,
+        eval_data: Iterable = None,
+        logger: logging.Logger = None,
+        callbacks: List[Callback] = None,
+    ):
+        """Performs one epoch of training and validation.
 
         Args:
-            train_ds (Union[tf.data.Dataset, tf.keras.utils.Sequence]): Training dataset.
-            global_epoch (int): The current epoch.
-            global_step (int): The current step.
-        Returns:
-            Tuple[int, int]: The updated global_epoch and global_step.
+            epoch (int): Current epoch.
+            train_data (Iterable): training data.
+            eval_data (Iterable, optional): validation data. Defaults to None.
+            logger (logging.Logger, optional): logger used for logging. Defaults to None.
+            callbacks (List[Callback], optional): List of callbacks. Defaults to None.
         """
-        logger = logging.getLogger("training")
-        pbar = tqdm.tqdm(total=len(train_ds))
-        pbar.update(1)
+        self.network.train()
+        if logger is None:
+            logger = logging
 
-        total_losses = {}
-        total_metrics = {}
-        # Start training model
-        for batch in train_ds:
-            if batch["sprectrome"].shape[2] > 65:
-                losses, metrics = self.train_step(batch)
-                # Log the losses and metrics
-                log_text = get_log_text(losses, total_losses, name="loss")
-                if metrics is not None:
-                    log_text += get_log_text(metrics, total_metrics, name="metric")
-                pbar.set_description(log_text)
+        epoch_log = {}
+        with tqdm.tqdm(total=len(train_data), ascii=True) as pbar:
+            pbar.update(1)
+            for batch in train_data:
+                # Training step
+                step += 1
+                train_log = self.train_step(batch)
+                assert isinstance(train_log, dict), "train_step should return a dict."
+                # Add logs, update progress bar
+                postfix = ""
+                for key, value in train_log.items():
+                    e_val = epoch_log.get(key, [])
+                    e_val.append(value)
+                    epoch_log.update({key: e_val})
+                    postfix += f"{key}: {value:.4f} "
+                    mlflow.log_metric(f"train_{key}", value)
+                pbar.set_description(postfix)
                 pbar.update(1)
-                global_step += 1
 
-        # Sumarize the epoch with the mean of the losses, metrics
-        log_summary = "Epoch summary:\n\t\t\t\t"
-        for k, v in total_losses.items():
-            log_summary += "{}: {:.4f} ".format(k, sum(v) / len(v))
-            mlflow.log_metric(f"epoch_{k}", sum(v) / len(v))
-        log_summary += "\n\t\t\t\t"
-        for k, v in total_metrics.items():
-            log_summary += "{}: {:.4f} ".format(k, sum(v) / len(v))
-            mlflow.log_metric(f"epoch_{k}", sum(v) / len(v))
-        logger.info(log_summary)
+                # Try to log learning rate if optax is implement with hyperparams injection
+                try:
+                    mlflow.log_metric(f"learning_rate", self.optimizer.param_groups[0]["lr"])
+                except:
+                    pass
 
-        global_epoch += 1
-        return global_step, global_epoch
+                # Callbacks
+                if callbacks is not None:
+                    for callback in callbacks:
+                        callback(self, step, epoch, train_log, isValPhase=False, logger=logger)
+        for key, value in epoch_log.items():
+            logger.info(f"Epoch {epoch} - {key}: {np.mean(value):.4f}")
+        if eval_data is not None:
+            self.network.eval()
+            logger.info("Performing validation...")
+            # First pass to retrieve keys
+            val_log = self.test_step(batch)
+            assert isinstance(val_log, dict), "val_step should return a dict."
+            eval_logs = {key: [] for key in val_log.keys()}
+
+            # Perform validation
+            for batch in tqdm.tqdm(eval_data, ascii=True):
+                val_log = self.test_step(batch)
+                for key, value in val_log.items():
+                    eval_logs[key].append(value)
+
+            # Log validation metrics
+            postfix = ""
+            for key, value in eval_logs.items():
+                postfix += f"{key}: {np.mean(value):.4f} "
+                mlflow.log_metric(f"val_{key}", np.mean(value))
+            logger.info("Validation: " + postfix)
+
+            # Callbacks
+            if callbacks is not None:
+                eval_logs = {key: np.mean(value) for key, value in eval_logs.items()}
+                for callback in callbacks:
+                    callback(self, step, epoch, eval_logs, isValPhase=True, logger=logger)
+        return step
 
     def evaluate(
         self,
-        test_ds: List,
-    ) -> Tuple[Dict, Dict]:
-        """Evaluate the model on the validation set.
+        test_data: Iterable,
+        logger: logging.Logger = None,
+    ) -> Dict:
+        """Performs evaluation on the test set.
 
         Args:
-            val_ds (Union[tf.data.Dataset, tf.keras.utils.Sequence]): Validation dataset.
+            test_data (Iterable): Test data.
+            logger (logging.Logger, optional): Logger. Defaults to None.
 
         Returns:
-            Tuple[Dict, Dict]: The losses and metrics on the validation set.
+            Dict: The evaluation metrics in a dictionary with the metric name as key and the metric value as value.
         """
-        logger = logging.getLogger("training")
-        logger.info("Starting validation on validation set with {} samples".format(len(test_ds)))
-        total_losses = {}
-        total_metrics = {}
+        self.network.eval()
+        if logger is None:
+            logger = logging
+        test_logs = {}
 
-        self.model.eval()
-        # Start evaluating model
-        with tqdm.tqdm(total=len(test_ds)) as pbar:
-            pbar.update(1)
-            for batch in test_ds:
-                losses, metrics = self.eval_step(batch)
-                log_text = get_log_text(losses, total_losses, name="loss")
-                if metrics is not None:
-                    log_text += get_log_text(metrics, total_metrics, name="metric")
-                pbar.update(1)
-        self.model.train()
+        for batch in tqdm.tqdm(test_data, ascii=True):
+            # Perform validation
+            test_log = self.test_step(batch)
+            for key, value in test_log.items():
+                v = test_logs.get(key, [])
+                v.append(value)
+                test_logs.update({key: v})
+        # Log validation metrics
+        postfix = ""
+        for key, value in test_logs.items():
+            postfix += f"{key}: {np.mean(value):.4f} "
+            try:
+                mlflow.log_metric(f"test_{key}", np.mean(value))
+            except:
+                logger.warning(f"Could not log test metric {key} using mlflow.")
+        logger.info("Test: " + postfix)
 
-        # Sumarize the validation with the mean of the losses, metrics
-        log_summary = "Validation summary:\n\t\t\t\t"
-        for k, v in total_losses.items():
-            log_summary += "{}: {:.4f} ".format(k, sum(v) / len(v))
-        log_summary += "\n\t\t\t\t"
-        for k, v in total_metrics.items():
-            log_summary += "{}: {:.4f} ".format(k, sum(v) / len(v))
-        logger.info(log_summary)
+    def summary(self, input_shapes: Union[Tuple, List, Dict]):
+        """Print a summary of the model.
 
-        return total_losses, total_metrics
+        Args:
+            input_shapes (Union[Tuple, List, Dict]): The input shapes.
+        """
+        summary(self, input_shapes)
 
-    def save_model(self, path: str):
-        torch.save(self.model, path)
+    def save(self, path: str, step=None) -> str:
+        """Save entire model to a checkpoint directory.
 
-    def train(self):
-        self.model.train()
-        self.model.to(self.device)
+        Args:
+            path (str): Path to the checkpoint directory.
+            step (int, optional): Current step. Defaults to None.
+        Returns:
+            str: Path to the checkpoint file.
+        """
+        ckpt_path = os.path.join(path, "checkpoint_{}.pt".format(step))
+        torch.save(self.network, ckpt_path)
+        return ckpt_path
 
-        best_test_loss, best_acc_loss = float("inf"), 0.0
-        mlflow.set_tracking_uri(uri=f'file://{os.path.join(self.log_dir, "mlruns")}')
+    @classmethod
+    def load(self, path: str):
+        """Load model from a checkpoint file.
+
+        Args:
+            path (str): Path to the checkpoint file.
+
+        Returns:
+            TorchTrainer: The loaded model.
+        """
+        return torch.load(path)
+
+    def save_weights(self, path: str, step=None):
+        """Save the model weights to a checkpoint directory.
+
+        Args:
+            path (str): Path to the checkpoint directory.
+            step (int, optional): Current step. Defaults to None.
+        """
+        ckpt_path = os.path.join(path, "checkpoint_{}.pth".format(step))
+        torch.save(self.network.state_dict(), ckpt_path)
+        return ckpt_path
+
+    def load_weights(self, path: str, device: str = "cpu"):
+        """Load the model weights from a checkpoint file.
+
+        Args:
+            path (str): Path to the checkpoint file.
+            device (str, optional): Device to load the weights on. Defaults to "cpu".
+        """
+        self.network.load_state_dict(torch.load(path), map_location=device)
+
+    def compile(
+        self,
+        optimizer: Union[str, torch.optim.Optimizer] = "sgd",
+        scheduler: torch.optim.lr_scheduler._LRScheduler = None,
+    ):
+        """Compile the model with the given optimizer.
+
+        Args:
+            optimizer (Union[str, torch.optim.Optimizer], optional): The optimizer to use. Defaults to "sgd".
+            scheduler (torch.optim.lr_scheduler._LRScheduler, optional): The scheduler to use. Defaults to None.
+
+        Raises:
+            AttributeError: This method must be called after the model is built.
+            NotImplementedError: The given optimizer is not implemented.
+        """
+        assert isinstance(optimizer, (str, torch.optim.Optimizer)), "Optimizer must be a string or a torch optimizer."
+        try:
+            self.network
+        except AttributeError:
+            raise AttributeError("Please add your model to the self.network attribute in the constructor!")
+
+        if type(optimizer) == str:
+            available_optimizers = {
+                "sgd": optimizers.sgd(self.network.parameters(), learning_rate=0.01, momentum=0.9),
+                "adam": optimizers.adam(self.network.parameters(), learning_rate=0.01),
+                "rmsprop": optimizers.rmsprop(self.network.parameters(), learning_rate=0.01),
+                "adagrad": optimizers.adagrad(self.network.parameters(), learning_rate=0.01),
+                "adamw": optimizers.adamw(self.network.parameters(), learning_rate=0.01, weight_decay=0.01),
+            }
+            optimizer = available_optimizers.get(optimizer, None)
+            if optimizer is None:
+                raise NotImplementedError(
+                    "{} is not found. List of available optimizers: {}".format(optimizer, list(available_optimizers.keys()))
+                )
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+
+    def fit(
+        self,
+        train_data: Iterable,
+        epochs: int,
+        eval_data: Iterable = None,
+        test_data: Iterable = None,
+        callbacks: List[Callback] = None,
+    ):
+        """Hyper API for training the model.
+
+        Args:
+            train_data (Iterable): Training data.
+            epochs (int): Number of epochs to train.
+            eval_data (Iterable, optional): Evaluation data. Defaults to None.
+            test_data (Iterable, optional): Test data. Defaults to None.
+            callbacks (List[Callback], optional): List of callbacks which will be called during training. Defaults to None.
+        Raises:
+            AttributeError: This method must be called after the model is compiled.
+        """
+        try:
+            self.optimizer
+        except AttributeError:
+            raise AttributeError("Please compile the model first!")
+
+        assert isinstance(callbacks, list) or callbacks is None, "Callbacks must be a list of Callback objects"
+
+        # Init mlflow
+        self.log_dir = os.path.join(self.log_dir, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        os.makedirs(self.log_dir, exist_ok=True)
+        # Logger
+        logging.getLogger().setLevel(logging.INFO)
+        file_handler = logging.FileHandler(os.path.join(self.log_dir, "train.log"))
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logger = logging.getLogger("Training")
+        logger.addHandler(file_handler)
+        logger.addHandler(logging.StreamHandler())
+
+        mlflow.set_tracking_uri(uri=f'file://{os.path.abspath(os.path.join(self.log_dir, "mlruns"))}')
+        global_step = 0
+        # Start training
         with mlflow.start_run():
-            global_step = 1
-            for epoch in range(self.opt.num_epochs):
-                logger = logging.getLogger("training")
-                logger.info("Start training epoch {}/{}".format(epoch + 1, self.opt.num_epochs))
-                global_step, _ = self.train_epoch(self.train_ds, global_step, epoch + 1)
-                total_losses, total_metrics = self.evaluate(self.test_ds)
-                for v in total_losses.values():
-                    loss = np.mean(v)
-                    if loss < best_test_loss:
-                        logger.info(
-                            "Loss improved from {:.4f} to {:.4f}, saving model to {}".format(
-                                best_test_loss, loss, os.path.join(self.weight_dir, "mmsera_best_val_loss.pt")
-                            )
-                        )
-                        best_test_loss = loss
-                        self.save_model(os.path.join(self.weight_dir, "mmsera_best_val_loss.pt"))
-                    mlflow.log_metric("test_loss", loss)
+            for epoch in range(1, epochs + 1):
+                logger.info(f"Epoch {epoch}/{epochs}")
+                global_step = self.train_epoch(global_step, epoch, train_data, eval_data, logger, callbacks=callbacks)
+                if test_data is not None:
+                    self.evaluate(test_data)
 
-                for v in total_metrics.values():
-                    acc = np.mean(v)
-                    if acc > best_acc_loss:
-                        logger.info(
-                            "Accuracy improved from {:.4f} to {:.4f}, saving model to {}".format(
-                                best_acc_loss, acc, os.path.join(self.weight_dir, "mmsera_best_val_acc.pt")
-                            )
-                        )
-                        best_acc_loss = acc
-                        self.save_model(os.path.join(self.weight_dir, "mmsera_best_val_acc.pt"))
-                    mlflow.log_metric("test_acc", acc)
-                if epoch % self.opt.save_freq == 0:
-                    self.save_model(os.path.join(self.weight_dir, f"mmsera_epoch_{epoch}.pt"))
-                    logger.info("Saving model to {}".format(os.path.join(self.weight_dir, f"mmsera_epoch_{epoch}.pt")))
+    @abstractmethod
+    def train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        """Train step for the model.
+
+        Args:
+            batch (Dict[str, torch.Tensor]): Your inputs should be compressed into a dictionary or list.
+            For example, {"inputs_1": inputs_1, "inputs_2": inputs_2} or [inputs_1, inputs_2]
+
+        Returns:
+            Dict[str, torch.Tensor]: The outputs must be a dictionary which contains the information that you want to log.
+            For example, {"loss": loss, "metrics": metrics}, loss and metrics need to be a scalar.
+        """
+        pass
+
+    @abstractmethod
+    def test_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        """Test step for the model.
+
+        Args:
+            batch (Dict[str, torch.Tensor]): Your inputs should be compressed into a dictionary or list.
+            For example, {"inputs_1": inputs_1, "inputs_2": inputs_2} or [inputs_1, inputs_2]
+
+        Returns:
+            Dict[str, torch.Tensor]: The outputs must be a dictionary which contains the information that you want to log.
+            For example, {"loss": loss, "metrics": metrics}, loss and metrics need to be a scalar.
+        """
+        pass
