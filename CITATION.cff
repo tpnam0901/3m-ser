@@ -35,8 +35,8 @@ preferred-citation:
     city: "Ho Chi Minh City"
     country: "VietNam"
   doi: ""
-  start: ""
-  end: ""
+  start: 
+  end: 
   month: 8
   year: 2023
   publisher: ""
@@ -52,15 +52,3 @@ preferred-citation:
   #   - ser
   #   - emotion-classification
   # license: Unlicense
-  
-@inproceedings{Tran_Phuong_Multi-modal_Speech_Emotion_2023,
-address = {Ho Chi Minh City, VietNam},
-author = {Tran Phuong, Nam and Vu Thi Thuy, Duong and Pham Nhat, Truong and Dang Ngoc Minh, Duc and Tran, Anh-Khoa},
-booktitle = {9th EAI International Conference on Industrial Networks and Intelligent Systems ()},
-month = aug,
-pages = {0},
-series = {EAI INISCOM 2023},
-title = {{Multi-modal Speech Emotion Recognition: Improving Accuracy through Fusion of VGGish and BERT Features with Multi-head Attention}},
-url = {https://github.com/namphuongtran9196/3m-ser},
-year = {2023}
-}
