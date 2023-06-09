@@ -84,14 +84,20 @@ preferred-citation:
   - given-names: Anh-Khoa
     family-names: Tran
     orcid: 'https://orcid.org/0000-0003-4649-8417'
-  doi: ""
-  booktitle: ""
-  start: "" # First page number
-  end: "" # Last page number
-  publisher: ""
-  month: ""
-  year: 2023
-  url: ""
-  timestamp: ""
+  conference:
+    name: "9th EAI International Conference on Industrial Networks and Intelligent Systems (EAI INISCOM 2023)"
+    date-start: 2023-08-02
+    date-end: 2023-08-03
+    city: "Ho Chi Minh City"
+    country: "VietNam"
+  # doi: ""
+  # booktitle: ""
+  # start: "" # First page number
+  # end: "" # Last page number
+  # publisher: ""
+  # month: ""
+  # year: 2023
+  # url: ""
+  # timestamp: ""
   
   
