@@ -69,6 +69,7 @@ If you use this code or part of it, please cite the following papers:
 
 }
 ```
+On GitHub, you can copy this citation in APA or BibTeX format via the "Cite this repository" button. Or, see the comments in CITATION.cff for the raw BibTeX.
 
 ## References
 
