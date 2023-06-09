@@ -43,6 +43,7 @@ preferred-citation:
   title: "Multi-modal Speech Emotion Recognition: Improving Accuracy through Fusion of VGGish and BERT Features with Multi-head Attention"
   type: "conference-paper"
   url: "https://github.com/namphuongtran9196/3m-ser"
+  
   keywords:
     - emotion
     - emotion-analysis
@@ -51,4 +52,5 @@ preferred-citation:
     - 3m-ser
     - ser
     - emotion-classification
+  
   license: Unlicense
