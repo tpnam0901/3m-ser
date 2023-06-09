@@ -3,8 +3,8 @@ message: >-
     If you use 3M-SER in your research, please cite our work as below.
 preferred-citation:
   authors:
-      - given-names: Nam
-        family-names: Tran Phuong
+      - given-names: Phuong-Nam
+        family-names: Tran 
         email: namphuongtran9196@gmail.com
         orcid: 'https://orcid.org/0009-0009-6551-9106'
         affiliation: FPT University, Ho Chi Minh City, Vietnam
@@ -28,7 +28,7 @@ preferred-citation:
         email: trananhkhoa@tdtu.edu.vn
         orcid: 'https://orcid.org/0000-0003-4649-8417'
         affiliation: Ton Duc Thang University, Ho Chi Minh City, Vietnam
-  collection-title: "9th EAI International Conference on Industrial Networks and Intelligent Systems ()"
+  collection-title: "9th EAI International Conference on Industrial Networks and Intelligent Systems"
   collection-type: "proceedings"
   conference:
     name: "EAI INISCOM 2023"
@@ -53,4 +53,14 @@ preferred-citation:
   #   - emotion-classification
   # license: Unlicense
   
-  
+@inproceedings{Tran_Phuong_Multi-modal_Speech_Emotion_2023,
+address = {Ho Chi Minh City, VietNam},
+author = {Tran Phuong, Nam and Vu Thi Thuy, Duong and Pham Nhat, Truong and Dang Ngoc Minh, Duc and Tran, Anh-Khoa},
+booktitle = {9th EAI International Conference on Industrial Networks and Intelligent Systems ()},
+month = aug,
+pages = {0},
+series = {EAI INISCOM 2023},
+title = {{Multi-modal Speech Emotion Recognition: Improving Accuracy through Fusion of VGGish and BERT Features with Multi-head Attention}},
+url = {https://github.com/namphuongtran9196/3m-ser},
+year = {2023}
+}
