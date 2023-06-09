@@ -1,21 +1,46 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
 cff-version: 1.2.0
 title: >-
   Multi-modal Speech Emotion Recognition: Improving Accuracy
   through Fusion of VGGish and BERT Features with Multi-head
   Attention
 message: >-
-  If you use 3M-SER in your research, please cite our work
-  by using the github citation:
-type: software
+  If you use 3M-SER in your research, please cite our work as below.
 authors:
   - given-names: Nam
     family-names: Tran Phuong
     email: namphuongtran9196@gmail.com
     orcid: 'https://orcid.org/0009-0009-6551-9106'
-    affiliation: FPT University
+    affiliation: FPT University, Ho Chi Minh City, Vietnam
+  - given-names: Duong
+    family-names: Vu Thi Thuy
+    email: duongvtt9@fe.edu.vn
+    orcid: 'https://orcid.org/0000-0001-8614-8732'
+    affiliation: FPT University, Ho Chi Minh City, Vietnam
+  - given-names: Truong
+    family-names: Pham Nhat
+    email: truongpham96@skku.edu
+    orcid: 'https://orcid.org/0000-0002-8086-6722'
+    affiliation: FPT University, Ho Chi Minh City, Vietnam
+  - given-names: Duc
+    family-names: Dang Ngoc Minh
+    email: ducdnm2@fe.edu.vn
+    orcid: 'https://orcid.org/0000-0001-9302-3129'
+    affiliation: Sungkyunkwan University, Suwon, Republic of Korea
+  - given-names: Anh-Khoa
+    family-names: Tran
+    email: trananhkhoa@tdtu.edu.vn
+    orcid: 'https://orcid.org/0000-0003-4649-8417'
+    affiliation: Ton Duc Thang University, Ho Chi Minh City, Vietnam
+
+keywords:
+  - emotion
+  - emotion-analysis
+  - emotion-detection
+  - emotion-recognition
+  - 3m-ser
+  - ser
+  - emotion-classification
+license: Unlicense
 repository-code: 'https://github.com/namphuongtran9196/3m-ser'
 abstract: >-
   Recent research has shown that multi-modal learning is a
@@ -40,12 +65,33 @@ abstract: >-
   with similar approaches. In addition, it highlights the
   effectiveness of incorporating an extra fusion module in
   multi-modal learning.
-keywords:
-  - emotion
-  - emotion-analysis
-  - emotion-detection
-  - emotion-recognition
-  - 3m-ser
-  - ser
-  - emotion-classification
-license: Unlicense
+
+preferred-citation:
+  type: conference-paper
+  authors:
+  - given-names: Nam
+    family-names: Tran Phuong
+    orcid: 'https://orcid.org/0009-0009-6551-9106'
+  - given-names: Duong
+    family-names: Vu Thi Thuy
+    orcid: 'https://orcid.org/0000-0001-8614-8732'
+  - given-names: Truong
+    family-names: Pham Nhat
+    orcid: 'https://orcid.org/0000-0002-8086-6722'
+  - given-names: Duc
+    family-names: Dang Ngoc Minh
+    orcid: 'https://orcid.org/0000-0001-9302-3129'
+  - given-names: Anh-Khoa
+    family-names: Tran
+    orcid: 'https://orcid.org/0000-0003-4649-8417'
+  doi: ""
+  booktitle: ""
+  start: "" # First page number
+  end: "" # Last page number
+  publisher: ""
+  month: ""
+  year: 2023
+  url: ""
+  timestamp: ""
+  
+  
