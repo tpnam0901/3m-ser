@@ -35,6 +35,10 @@ def main(opt: Config):
             num_classes=opt.num_classes,
             num_attention_head=opt.num_attention_head,
             dropout=opt.dropout,
+            text_encoder_type=opt.text_encoder_type,
+            text_unfreeze=opt.text_unfreeze,
+            audio_encoder_type=opt.audio_encoder_type,
+            audio_unfreeze=opt.audio_unfreeze,
         )
     except AttributeError:
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))

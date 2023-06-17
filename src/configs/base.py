@@ -67,6 +67,10 @@ class Config(BaseConfig):
         self.num_attention_head = 8
         self.dropout = 0.5
         self.model_type = "MMSERALayerNorm"  # [MMSERA, MMSERAMinMax, MMSERALayerNorm]
+        self.text_encoder_type = "bert"  # [bert]
+        self.text_unfreeze = False
+        self.audio_encoder_type = "vggish"  # [vggish, panns]
+        self.audio_unfreeze = True
 
         for key, value in kwargs.items():
             setattr(self, key, value)
