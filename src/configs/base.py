@@ -60,7 +60,7 @@ class Config(BaseConfig):
         self.learning_rate_gamma = 0.1
 
         # Dataset
-        self.data_root = "data"
+        self.data_root = "data/3M-SER"  # [data/3M-SER, data/PANNS]
 
         # Model
         self.num_classes = 4

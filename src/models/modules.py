@@ -3,72 +3,70 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
-from audioset_tagging_cnn.pytorch.models import do_mixup
+from audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14
 from torchvggish import vggish
 from transformers import BertConfig, BertModel
 
+# class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
+#     def forward(self, input, mixup_lambda=None):
+#         """
+#         Input: (batch_size, data_length)"""
 
-class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
-    def forward(self, input, mixup_lambda=None):
-        """
-        Input: (batch_size, data_length)"""
+#         # Wavegram
+#         a1 = F.relu_(self.pre_bn0(self.pre_conv0(input[:, None, :])))
+#         a1 = self.pre_block1(a1, pool_size=4)
+#         a1 = self.pre_block2(a1, pool_size=4)
+#         a1 = self.pre_block3(a1, pool_size=4)
+#         a1 = a1.reshape((a1.shape[0], -1, 32, a1.shape[-1])).transpose(2, 3)
+#         a1 = self.pre_block4(a1, pool_size=(2, 1))
 
-        # Wavegram
-        a1 = F.relu_(self.pre_bn0(self.pre_conv0(input[:, None, :])))
-        a1 = self.pre_block1(a1, pool_size=4)
-        a1 = self.pre_block2(a1, pool_size=4)
-        a1 = self.pre_block3(a1, pool_size=4)
-        a1 = a1.reshape((a1.shape[0], -1, 32, a1.shape[-1])).transpose(2, 3)
-        a1 = self.pre_block4(a1, pool_size=(2, 1))
+#         # Remove the log mel spectrogram part because we don't need it
+#         # # Log mel spectrogram
+#         # x = self.spectrogram_extractor(input)  # (batch_size, 1, time_steps, freq_bins)
+#         # x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
+#         x = input
 
-        # Remove the log mel spectrogram part because we don't need it
-        # # Log mel spectrogram
-        # x = self.spectrogram_extractor(input)  # (batch_size, 1, time_steps, freq_bins)
-        # x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
-        x = input
+#         x = x.transpose(1, 3)
+#         x = self.bn0(x)
+#         x = x.transpose(1, 3)
 
-        x = x.transpose(1, 3)
-        x = self.bn0(x)
-        x = x.transpose(1, 3)
+#         if self.training:
+#             x = self.spec_augmenter(x)
 
-        if self.training:
-            x = self.spec_augmenter(x)
+#         # Mixup on spectrogram
+#         if self.training and mixup_lambda is not None:
+#             x = do_mixup(x, mixup_lambda)
+#             a1 = do_mixup(a1, mixup_lambda)
 
-        # Mixup on spectrogram
-        if self.training and mixup_lambda is not None:
-            x = do_mixup(x, mixup_lambda)
-            a1 = do_mixup(a1, mixup_lambda)
+#         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
 
-        x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
+#         # Concatenate Wavegram and Log mel spectrogram along the channel dimension
+#         x = torch.cat((x, a1), dim=1)
 
-        # Concatenate Wavegram and Log mel spectrogram along the channel dimension
-        x = torch.cat((x, a1), dim=1)
+#         x = F.dropout(x, p=0.2, training=self.training)
+#         x = self.conv_block2(x, pool_size=(2, 2), pool_type="avg")
+#         x = F.dropout(x, p=0.2, training=self.training)
+#         x = self.conv_block3(x, pool_size=(2, 2), pool_type="avg")
+#         x = F.dropout(x, p=0.2, training=self.training)
+#         x = self.conv_block4(x, pool_size=(2, 2), pool_type="avg")
+#         x = F.dropout(x, p=0.2, training=self.training)
+#         x = self.conv_block5(x, pool_size=(2, 2), pool_type="avg")
+#         x = F.dropout(x, p=0.2, training=self.training)
+#         x = self.conv_block6(x, pool_size=(1, 1), pool_type="avg")
+#         x = F.dropout(x, p=0.2, training=self.training)
+#         x = torch.mean(x, dim=3)
 
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block2(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block3(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block4(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block5(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block6(x, pool_size=(1, 1), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = torch.mean(x, dim=3)
+#         (x1, _) = torch.max(x, dim=2)
+#         x2 = torch.mean(x, dim=2)
+#         x = x1 + x2
+#         x = F.dropout(x, p=0.5, training=self.training)
+#         x = F.relu_(self.fc1(x))
+#         embedding = F.dropout(x, p=0.5, training=self.training)
+#         clipwise_output = torch.sigmoid(self.fc_audioset(x))
 
-        (x1, _) = torch.max(x, dim=2)
-        x2 = torch.mean(x, dim=2)
-        x = x1 + x2
-        x = F.dropout(x, p=0.5, training=self.training)
-        x = F.relu_(self.fc1(x))
-        embedding = F.dropout(x, p=0.5, training=self.training)
-        clipwise_output = torch.sigmoid(self.fc_audioset(x))
+#         output_dict = {"clipwise_output": clipwise_output, "embedding": embedding}
 
-        output_dict = {"clipwise_output": clipwise_output, "embedding": embedding}
-
-        return output_dict
+#         return output_dict
 
 
 def build_bert_encoder() -> nn.Module:
