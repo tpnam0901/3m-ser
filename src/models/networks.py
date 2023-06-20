@@ -12,8 +12,10 @@ class MMSERALayerNorm(nn.Module):
         num_attention_head=8,
         dropout=0.5,
         text_encoder_type="bert",
+        text_encoder_dim=768,
         text_unfreeze=False,
         audio_encoder_type="vggish",
+        audio_encoder_dim=128,
         audio_unfreeze=True,
         device="cpu",
     ):
@@ -36,22 +38,22 @@ class MMSERALayerNorm(nn.Module):
         # Audio module
         self.audio_encoder = build_audio_encoder(audio_encoder_type)
         self.audio_encoder.to(device)
-        self.audio_encoder_layer_norm = nn.LayerNorm(128)
+        self.audio_encoder_layer_norm = nn.LayerNorm(audio_encoder_dim)
         # Freeze/Unfreeze the audio module
         for param in self.audio_encoder.parameters():
             param.requires_grad = audio_unfreeze
 
         # Fusion module
         self.text_attention = nn.MultiheadAttention(
-            embed_dim=768, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=text_encoder_dim, num_heads=num_attention_head, dropout=dropout, batch_first=True
         )
-        self.text_linear = nn.Linear(768, 128)
-        self.text_layer_norm = nn.LayerNorm(128)
+        self.text_linear = nn.Linear(text_encoder_dim, audio_encoder_dim)
+        self.text_layer_norm = nn.LayerNorm(audio_encoder_dim)
 
         self.fusion_attention = nn.MultiheadAttention(
-            embed_dim=128, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=audio_encoder_dim, num_heads=num_attention_head, dropout=dropout, batch_first=True
         )
-        self.fusion_linear = nn.Linear(128, 128)
+        self.fusion_linear = nn.Linear(audio_encoder_dim, 128)
         self.fusion_layer_norm = nn.LayerNorm(128)
 
         self.dropout = nn.Dropout(dropout)

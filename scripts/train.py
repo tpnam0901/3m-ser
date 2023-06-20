@@ -36,8 +36,10 @@ def main(opt: Config):
             num_attention_head=opt.num_attention_head,
             dropout=opt.dropout,
             text_encoder_type=opt.text_encoder_type,
+            text_encoder_dim=opt.text_encoder_dim,
             text_unfreeze=opt.text_unfreeze,
             audio_encoder_type=opt.audio_encoder_type,
+            audio_encoder_dim=opt.audio_encoder_dim,
             audio_unfreeze=opt.audio_unfreeze,
         )
     except AttributeError:
@@ -58,7 +60,14 @@ def main(opt: Config):
     # Build dataset
     train_ds, test_ds = build_train_test_dataset(opt.data_root)
 
-    trainer = Trainer(network=network, tokenizer=tokenizer, criterion=nn.CrossEntropyLoss(), log_dir=opt.checkpoint_dir)
+    use_waveform = True if opt.audio_encoder_type == "panns" else False
+    trainer = Trainer(
+        network=network,
+        tokenizer=tokenizer,
+        criterion=nn.CrossEntropyLoss(),
+        log_dir=opt.checkpoint_dir,
+        use_waveform=use_waveform,
+    )
     # Build optimizer and criterion
     optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma)

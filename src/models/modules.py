@@ -9,68 +9,71 @@ import torch.nn.functional as F
 from torchvggish import vggish
 from transformers import BertConfig, BertModel
 
-from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14
+from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
+from .audioset_tagging_cnn.pytorch.models import do_mixup
 
-# class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
-#     def forward(self, input, mixup_lambda=None):
-#         """
-#         Input: (batch_size, data_length)"""
 
-#         # Wavegram
-#         a1 = F.relu_(self.pre_bn0(self.pre_conv0(input[:, None, :])))
-#         a1 = self.pre_block1(a1, pool_size=4)
-#         a1 = self.pre_block2(a1, pool_size=4)
-#         a1 = self.pre_block3(a1, pool_size=4)
-#         a1 = a1.reshape((a1.shape[0], -1, 32, a1.shape[-1])).transpose(2, 3)
-#         a1 = self.pre_block4(a1, pool_size=(2, 1))
+class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
+    def forward(self, input, mixup_lambda=None):
+        """
+        Input: (batch_size, data_length)"""
 
-#         # Remove the log mel spectrogram part because we don't need it
-#         # # Log mel spectrogram
-#         # x = self.spectrogram_extractor(input)  # (batch_size, 1, time_steps, freq_bins)
-#         # x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
-#         x = input
+        # Wavegram
+        a1 = F.relu_(self.pre_bn0(self.pre_conv0(input[:, None, :])))
+        a1 = self.pre_block1(a1, pool_size=4)
+        a1 = self.pre_block2(a1, pool_size=4)
+        a1 = self.pre_block3(a1, pool_size=4)
+        a1 = a1.reshape((a1.shape[0], -1, 32, a1.shape[-1])).transpose(2, 3)
+        a1 = self.pre_block4(a1, pool_size=(2, 1))
 
-#         x = x.transpose(1, 3)
-#         x = self.bn0(x)
-#         x = x.transpose(1, 3)
+        # Log mel spectrogram
+        x = self.spectrogram_extractor(input)  # (batch_size, 1, time_steps, freq_bins)
+        x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
 
-#         if self.training:
-#             x = self.spec_augmenter(x)
+        x = x.transpose(1, 3)
+        x = self.bn0(x)
+        x = x.transpose(1, 3)
 
-#         # Mixup on spectrogram
-#         if self.training and mixup_lambda is not None:
-#             x = do_mixup(x, mixup_lambda)
-#             a1 = do_mixup(a1, mixup_lambda)
+        if self.training:
+            x = self.spec_augmenter(x)
 
-#         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
+        # Mixup on spectrogram
+        if self.training and mixup_lambda is not None:
+            x = do_mixup(x, mixup_lambda)
+            a1 = do_mixup(a1, mixup_lambda)
 
-#         # Concatenate Wavegram and Log mel spectrogram along the channel dimension
-#         x = torch.cat((x, a1), dim=1)
+        x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
 
-#         x = F.dropout(x, p=0.2, training=self.training)
-#         x = self.conv_block2(x, pool_size=(2, 2), pool_type="avg")
-#         x = F.dropout(x, p=0.2, training=self.training)
-#         x = self.conv_block3(x, pool_size=(2, 2), pool_type="avg")
-#         x = F.dropout(x, p=0.2, training=self.training)
-#         x = self.conv_block4(x, pool_size=(2, 2), pool_type="avg")
-#         x = F.dropout(x, p=0.2, training=self.training)
-#         x = self.conv_block5(x, pool_size=(2, 2), pool_type="avg")
-#         x = F.dropout(x, p=0.2, training=self.training)
-#         x = self.conv_block6(x, pool_size=(1, 1), pool_type="avg")
-#         x = F.dropout(x, p=0.2, training=self.training)
-#         x = torch.mean(x, dim=3)
+        # Fix mismatch dimension for concatenation
+        if x.size(2) > a1.size(2):
+            a1 = torch.cat((a1, a1[:, :, -(x.size(2) - a1.size(2)) :, :]), dim=2)
+        # Concatenate Wavegram and Log mel spectrogram along the channel dimension
+        x = torch.cat((x, a1), dim=1)
 
-#         (x1, _) = torch.max(x, dim=2)
-#         x2 = torch.mean(x, dim=2)
-#         x = x1 + x2
-#         x = F.dropout(x, p=0.5, training=self.training)
-#         x = F.relu_(self.fc1(x))
-#         embedding = F.dropout(x, p=0.5, training=self.training)
-#         clipwise_output = torch.sigmoid(self.fc_audioset(x))
+        x = F.dropout(x, p=0.2, training=self.training)
+        x = self.conv_block2(x, pool_size=(2, 2), pool_type="avg")
+        x = F.dropout(x, p=0.2, training=self.training)
+        x = self.conv_block3(x, pool_size=(2, 2), pool_type="avg")
+        x = F.dropout(x, p=0.2, training=self.training)
+        x = self.conv_block4(x, pool_size=(2, 2), pool_type="avg")
+        x = F.dropout(x, p=0.2, training=self.training)
+        x = self.conv_block5(x, pool_size=(2, 2), pool_type="avg")
+        x = F.dropout(x, p=0.2, training=self.training)
+        x = self.conv_block6(x, pool_size=(1, 1), pool_type="avg")
+        x = F.dropout(x, p=0.2, training=self.training)
+        x = torch.mean(x, dim=3)
 
-#         output_dict = {"clipwise_output": clipwise_output, "embedding": embedding}
+        (x1, _) = torch.max(x, dim=2)
+        x2 = torch.mean(x, dim=2)
+        x = x1 + x2
+        x = F.dropout(x, p=0.5, training=self.training)
+        x = F.relu_(self.fc1(x))
+        embedding = F.dropout(x, p=0.5, training=self.training)
+        clipwise_output = torch.sigmoid(self.fc_audioset(x))
 
-#         return output_dict
+        # output_dict = {"clipwise_output": clipwise_output, "embedding": embedding}
+
+        return embedding
 
 
 def build_bert_encoder() -> nn.Module:
@@ -117,7 +120,7 @@ def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
     mel_bins = 64
     fmin = 50
     fmax = 14000
-    num_classes = 527
+    classes_num = 527
 
     model = panns[type](
         sample_rate=sample_rate,
@@ -126,7 +129,7 @@ def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
         mel_bins=mel_bins,
         fmin=fmin,
         fmax=fmax,
-        classes_num=num_classes,
+        classes_num=classes_num,
     )
 
     weights, url = weights[type]
