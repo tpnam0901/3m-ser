@@ -1,11 +1,15 @@
 import os
+import sys
 
+file_dir = os.path.dirname(__file__)
+sys.path.append(os.path.join(file_dir, "audioset_tagging_cnn/pytorch"))
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14
 from torchvggish import vggish
 from transformers import BertConfig, BertModel
+
+from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14
 
 # class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
 #     def forward(self, input, mixup_lambda=None):
