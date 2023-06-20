@@ -29,7 +29,7 @@
 ## How To Use
 - Clone this repository 
 ```bash
-git clone https://github.com/namphuongtran9196/3m-ser-private.git 
+git clone https://github.com/namphuongtran9196/3m-ser.git 
 cd 3m-ser
 ```
 - Create a conda environment and install requirements
