@@ -38,8 +38,8 @@ class AudioModel(nn.Module):
             param.requires_grad = audio_unfreeze
 
         self.dropout = nn.Dropout(dropout)
-        self.linear = nn.Linear(128, 64)
-        self.classifer = nn.Linear(64, num_classes)
+        self.linear = nn.Linear(audio_encoder_dim, audio_encoder_dim)
+        self.classifer = nn.Linear(audio_encoder_dim, num_classes)
 
     def forward(self, input_ids, audio, output_attentions=False):
         # Audio processing
