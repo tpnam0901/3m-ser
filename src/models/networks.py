@@ -4,6 +4,64 @@ import torch.nn as nn
 from .modules import build_audio_encoder, build_text_encoder
 
 
+# Create audio only model
+class AudioModel(nn.Module):
+    def __init__(
+        self,
+        num_classes=4,
+        num_attention_head=8,
+        dropout=0.5,
+        text_encoder_type="bert",
+        text_encoder_dim=768,
+        text_unfreeze=False,
+        audio_encoder_type="vggish",
+        audio_encoder_dim=128,
+        audio_unfreeze=True,
+        device="cpu",
+    ):
+        """
+
+        Args: MMSERA model extends from MMSER model in the paper
+            num_classes (int, optional): The number of classes. Defaults to 4.
+            num_attention_head (int, optional): The number of self-attention heads. Defaults to 8.
+            dropout (float, optional): Whether to use dropout. Defaults to 0.5.
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(AudioModel, self).__init__()
+
+        # Audio module
+        self.audio_encoder = build_audio_encoder(audio_encoder_type)
+        self.audio_encoder.to(device)
+        # self.audio_encoder_layer_norm = nn.LayerNorm(audio_encoder_dim)
+        # Freeze/Unfreeze the audio module
+        for param in self.audio_encoder.parameters():
+            param.requires_grad = audio_unfreeze
+
+        self.dropout = nn.Dropout(dropout)
+        self.linear = nn.Linear(128, 64)
+        self.classifer = nn.Linear(64, num_classes)
+
+    def forward(self, input_ids, audio, output_attentions=False):
+        # Audio processing
+        audio_embeddings = self.audio_encoder(audio)
+
+        # Check if vggish outputs is (128) or (num_samples, 128)
+        if len(audio_embeddings.size()) == 1:
+            audio_embeddings = audio_embeddings.unsqueeze(0)
+
+        # Expand the audio embeddings to match the text embeddings
+        audio_embeddings = audio_embeddings.unsqueeze(0)
+        # Flatten the audio embeddings
+        audio_embeddings = audio_embeddings.view(audio_embeddings.size(0), -1)
+        # Classification head
+        x = self.dropout(audio_embeddings)
+        x = self.linear(x)
+        x = nn.functional.leaky_relu(x)
+        out = self.classifer(x)
+
+        return out
+
+
 # Create Multi-modal model - layer norm
 class MMSERALayerNorm(nn.Module):
     def __init__(
