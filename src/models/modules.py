@@ -11,9 +11,14 @@ from transformers import BertConfig, BertModel
 
 from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
 from .audioset_tagging_cnn.pytorch.models import do_mixup
+from .audioset_tagging_cnn.utils.utilities import Mixup
 
 
 class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
+    def __init__(self, **kwargs):
+        super(Wavegram_Logmel_Cnn14).__init__(**kwargs)
+        self.mix_up = Mixup(mixup_alpha=1.0)
+
     def forward(self, input, mixup_lambda=None):
         """
         Input: (batch_size, data_length)"""
@@ -36,9 +41,8 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
 
         if self.training:
             x = self.spec_augmenter(x)
-
-        # Mixup on spectrogram
-        if self.training and mixup_lambda is not None:
+            # Mixup on spectrogram
+            mixup_lambda = self.mix_up.get_lambda(batch_size=len(x))
             x = do_mixup(x, mixup_lambda)
             a1 = do_mixup(a1, mixup_lambda)
 
@@ -69,7 +73,7 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
         x = F.dropout(x, p=0.5, training=self.training)
         x = F.relu_(self.fc1(x))
         embedding = F.dropout(x, p=0.5, training=self.training)
-        clipwise_output = torch.sigmoid(self.fc_audioset(x))
+        # clipwise_output = torch.sigmoid(self.fc_audioset(x))
 
         # output_dict = {"clipwise_output": clipwise_output, "embedding": embedding}
 
