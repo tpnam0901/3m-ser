@@ -52,7 +52,7 @@ class IEMOCAPDataset(Dataset):
         elif self.text_max_length is not None:
             input_ids = input_ids[: self.text_max_length]
 
-        return torch.from_numpy(input_ids), torch.from_numpy(samples.astype(np.float32)), torch.tensor(label)
+        return torch.from_numpy(np.asarray(input_ids)), torch.from_numpy(samples.astype(np.float32)), torch.tensor(label)
 
     def __len__(self):
         return len(self.data_list)

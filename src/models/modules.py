@@ -131,12 +131,12 @@ def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
     )
 
     weights, url = weights[type]
-    # if not os.path.exists(os.path.join("/tmp/{}".format(weights))):
-    #     os.system("wget {} -O /tmp/{}".format(url, weights))
+    if not os.path.exists(os.path.join("/tmp/{}".format(weights))):
+        os.system("wget {} -O /tmp/{}".format(url, weights))
 
-    # model.to("cpu")
-    # state_dict = torch.load(os.path.join("/tmp/{}".format(weights)), map_location="cpu")
-    # model.load_state_dict(state_dict["model"])
+    model.to("cpu")
+    state_dict = torch.load(os.path.join("/tmp/{}".format(weights)), map_location="cpu")
+    model.load_state_dict(state_dict["model"])
     return model
 
 
