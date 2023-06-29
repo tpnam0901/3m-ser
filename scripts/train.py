@@ -15,9 +15,9 @@ from torch import nn, optim
 from transformers import BertTokenizer
 
 from configs.base import Config
-from data.dataloader import build_train_test_dataset
+from data.dataloader import build_batch_train_test_dataset, build_train_test_dataset
 from models import networks
-from trainer import Trainer
+from trainer import BatchTrainer, Trainer
 from utils.configs import get_options
 from utils.torch.callbacks import CheckpointsCallback
 
@@ -58,16 +58,34 @@ def main(opt: Config):
     opt.save(opt)
 
     # Build dataset
-    train_ds, test_ds = build_train_test_dataset(opt.data_root)
+    if opt.batch_size == 1:
+        train_ds, test_ds = build_train_test_dataset(opt.data_root)
+    else:
+        train_ds, test_ds = build_batch_train_test_dataset(
+            opt.data_root,
+            opt.batch_size,
+            tokenizer,
+            opt.audio_max_length,
+            text_max_length=opt.text_max_length,
+        )
 
     use_waveform = True if opt.audio_encoder_type == "panns" else False
-    trainer = Trainer(
-        network=network,
-        tokenizer=tokenizer,
-        criterion=nn.CrossEntropyLoss(),
-        log_dir=opt.checkpoint_dir,
-        use_waveform=use_waveform,
-    )
+    if opt.batch_size == 1:
+        trainer = Trainer(
+            network=network,
+            tokenizer=tokenizer,
+            criterion=nn.CrossEntropyLoss(),
+            log_dir=opt.checkpoint_dir,
+            use_waveform=use_waveform,
+        )
+    else:
+        trainer = BatchTrainer(
+            network=network,
+            tokenizer=tokenizer,
+            criterion=nn.CrossEntropyLoss(),
+            log_dir=opt.checkpoint_dir,
+            use_waveform=use_waveform,
+        )
     # Build optimizer and criterion
     optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma)

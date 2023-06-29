@@ -134,13 +134,6 @@ class MMSERALayerNorm(nn.Module):
         text_linear = self.text_linear(text_attention)
         text_norm = self.text_layer_norm(text_linear)
 
-        # Check if vggish outputs is (128) or (num_samples, 128)
-        if len(audio_embeddings.size()) == 1:
-            audio_embeddings = audio_embeddings.unsqueeze(0)
-
-        # Expand the audio embeddings to match the text embeddings
-        audio_embeddings = audio_embeddings.unsqueeze(0)
-
         # Concatenate the text and audio embeddings
         fusion_embeddings = torch.cat((text_norm, audio_embeddings), 1)
 

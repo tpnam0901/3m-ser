@@ -3,6 +3,7 @@ import sys
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(os.path.join(file_dir, "audioset_tagging_cnn/pytorch"))
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,9 +12,14 @@ from transformers import BertConfig, BertModel
 
 from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
 from .audioset_tagging_cnn.pytorch.models import do_mixup
+from .audioset_tagging_cnn.utils.utilities import Mixup
 
 
 class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
+    def __init__(self, **kwargs):
+        super(Wavegram_Logmel_Cnn14, self).__init__(**kwargs)
+        self.mix_up = Mixup(mixup_alpha=1.0)
+
     def forward(self, input, mixup_lambda=None):
         """
         Input: (batch_size, data_length)"""
@@ -31,19 +37,16 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
         x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
 
         x = x.transpose(1, 3)
+
         x = self.bn0(x)
         x = x.transpose(1, 3)
-
         if self.training:
             x = self.spec_augmenter(x)
-
-        # Mixup on spectrogram
-        if self.training and mixup_lambda is not None:
-            x = do_mixup(x, mixup_lambda)
-            a1 = do_mixup(a1, mixup_lambda)
-
+            # # Mixup on spectrogram
+            # mixup_lambda = torch.from_numpy(self.mix_up.get_lambda(batch_size=len(x)).astype(np.float32)).to(x.device)
+            # x = do_mixup(x, mixup_lambda)
+            # a1 = do_mixup(a1, mixup_lambda)
         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
-
         # Fix mismatch dimension for concatenation
         if x.size(2) > a1.size(2):
             a1 = torch.cat((a1, a1[:, :, -(x.size(2) - a1.size(2)) :, :]), dim=2)
@@ -62,18 +65,28 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
         x = self.conv_block6(x, pool_size=(1, 1), pool_type="avg")
         x = F.dropout(x, p=0.2, training=self.training)
         x = torch.mean(x, dim=3)
+        x = x.transpose(1, 2)
 
-        (x1, _) = torch.max(x, dim=2)
-        x2 = torch.mean(x, dim=2)
-        x = x1 + x2
         x = F.dropout(x, p=0.5, training=self.training)
         x = F.relu_(self.fc1(x))
         embedding = F.dropout(x, p=0.5, training=self.training)
-        clipwise_output = torch.sigmoid(self.fc_audioset(x))
-
-        # output_dict = {"clipwise_output": clipwise_output, "embedding": embedding}
 
         return embedding
+
+
+class VGGish(nn.Module):
+    def __init__(self):
+        super(VGGish, self).__init__()
+        self.vggish = vggish()
+
+    def forward(self, x):
+        x = self.vggish(x)
+        # Check if vggish outputs is (128) or (num_samples, 128)
+        if len(x.size()) == 1:
+            x = x.unsqueeze(0)
+        # Expand the audio embeddings to match the text embeddings
+        x = x.unsqueeze(1)
+        return x
 
 
 def build_bert_encoder() -> nn.Module:
@@ -99,7 +112,7 @@ def build_text_encoder(type: str = "bert") -> nn.Module:
 
 def build_vggish_encoder() -> nn.Module:
     """A function to build vggish encoder"""
-    return vggish()
+    return VGGish()
 
 
 def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
@@ -114,12 +127,12 @@ def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
         ),
     }
     assert type in ["Wavegram_Logmel_Cnn14"], f"Do not support {type}"
-    sample_rate = 32000
+    sample_rate = 16000
     window_size = 1024
     hop_size = 320
     mel_bins = 64
-    fmin = 50
-    fmax = 14000
+    fmin = 125  # 50
+    fmax = 7500  # 14000
     classes_num = 527
 
     model = panns[type](

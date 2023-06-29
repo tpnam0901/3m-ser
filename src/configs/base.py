@@ -52,7 +52,7 @@ class Config(BaseConfig):
         self.num_epochs = 200
         self.checkpoint_dir = "checkpoints_panns"
         self.save_freq = 4000
-        self.batch_size = 1
+        self.batch_size = 64
 
         # Learning rate
         self.learning_rate = 0.0001
@@ -61,6 +61,8 @@ class Config(BaseConfig):
 
         # Dataset
         self.data_root = "data/PANNS"  # [data/3M-SER, data/PANNS]
+        self.text_max_length = 297
+        self.audio_max_length = 546220
 
         # Model
         self.num_classes = 4
