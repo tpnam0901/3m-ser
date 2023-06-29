@@ -74,6 +74,21 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
         return embedding
 
 
+class VGGish(nn.Module):
+    def __init__(self):
+        super(VGGish, self).__init__()
+        self.vggish = vggish()
+
+    def forward(self, x):
+        x = self.vggish(x)
+        # Check if vggish outputs is (128) or (num_samples, 128)
+        if len(x.size()) == 1:
+            x = x.unsqueeze(0)
+        # Expand the audio embeddings to match the text embeddings
+        x = x.unsqueeze(1)
+        return x
+
+
 def build_bert_encoder() -> nn.Module:
     """A function to build bert encoder"""
     config = BertConfig.from_pretrained("bert-base-uncased", output_hidden_states=True)
@@ -97,7 +112,7 @@ def build_text_encoder(type: str = "bert") -> nn.Module:
 
 def build_vggish_encoder() -> nn.Module:
     """A function to build vggish encoder"""
-    return vggish()
+    return VGGish()
 
 
 def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
