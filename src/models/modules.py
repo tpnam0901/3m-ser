@@ -11,14 +11,11 @@ from torchvggish import vggish
 from transformers import BertConfig, BertModel
 
 from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
-from .audioset_tagging_cnn.pytorch.models import do_mixup
-from .audioset_tagging_cnn.utils.utilities import Mixup
 
 
 class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
     def __init__(self, **kwargs):
         super(Wavegram_Logmel_Cnn14, self).__init__(**kwargs)
-        self.mix_up = Mixup(mixup_alpha=1.0)
 
     def forward(self, input, mixup_lambda=None):
         """
@@ -42,10 +39,7 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
         x = x.transpose(1, 3)
         if self.training:
             x = self.spec_augmenter(x)
-            # # Mixup on spectrogram
-            # mixup_lambda = torch.from_numpy(self.mix_up.get_lambda(batch_size=len(x)).astype(np.float32)).to(x.device)
-            # x = do_mixup(x, mixup_lambda)
-            # a1 = do_mixup(a1, mixup_lambda)
+
         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
         # Fix mismatch dimension for concatenation
         if x.size(2) > a1.size(2):
@@ -80,12 +74,10 @@ class VGGish(nn.Module):
         self.vggish = vggish()
 
     def forward(self, x):
-        x = self.vggish(x)
-        # Check if vggish outputs is (128) or (num_samples, 128)
-        if len(x.size()) == 1:
-            x = x.unsqueeze(0)
-        # Expand the audio embeddings to match the text embeddings
-        x = x.unsqueeze(1)
+        out = []
+        for i in range(x.size(0)):
+            out.append(self.vggish(x[i]))
+        x = torch.stack(out, axis=0)
         return x
 
 

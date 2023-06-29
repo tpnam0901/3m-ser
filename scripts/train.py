@@ -15,9 +15,9 @@ from torch import nn, optim
 from transformers import BertTokenizer
 
 from configs.base import Config
-from data.dataloader import build_batch_train_test_dataset, build_train_test_dataset
+from data.dataloader import build_train_test_dataset
 from models import networks
-from trainer import BatchTrainer, Trainer
+from trainer import Trainer
 from utils.configs import get_options
 from utils.torch.callbacks import CheckpointsCallback
 
@@ -29,6 +29,7 @@ torch.cuda.manual_seed_all(SEED)
 
 
 def main(opt: Config):
+    logging.info("Initializing model...")
     # Model
     try:
         network = getattr(networks, opt.model_type)(
@@ -41,15 +42,19 @@ def main(opt: Config):
             audio_encoder_type=opt.audio_encoder_type,
             audio_encoder_dim=opt.audio_encoder_dim,
             audio_unfreeze=opt.audio_unfreeze,
+            audio_norm_type=opt.audio_norm_type,
         )
     except AttributeError:
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
 
+    logging.info("Initializing checkpoint directory and dataset...")
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
     # Preapre the checkpoint directory
     opt.checkpoint_dir = checkpoint_dir = os.path.join(
-        os.path.abspath(opt.checkpoint_dir), opt.model_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        os.path.abspath(opt.checkpoint_dir),
+        opt.model_type + opt.audio_norm_type + "_" + opt.audio_encoder_type + "_" + opt.text_encoder_type,
+        datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),
     )
     log_dir = os.path.join(checkpoint_dir, "logs")
     weight_dir = os.path.join(checkpoint_dir, "weights")
@@ -58,34 +63,21 @@ def main(opt: Config):
     opt.save(opt)
 
     # Build dataset
-    if opt.batch_size == 1:
-        train_ds, test_ds = build_train_test_dataset(opt.data_root)
-    else:
-        train_ds, test_ds = build_batch_train_test_dataset(
-            opt.data_root,
-            opt.batch_size,
-            tokenizer,
-            opt.audio_max_length,
-            text_max_length=opt.text_max_length,
-        )
+    train_ds, test_ds = build_train_test_dataset(
+        opt.data_root,
+        opt.batch_size,
+        tokenizer,
+        opt.audio_max_length,
+        text_max_length=opt.text_max_length,
+        audio_encoder_type=opt.audio_encoder_type,
+    )
 
-    use_waveform = True if opt.audio_encoder_type == "panns" else False
-    if opt.batch_size == 1:
-        trainer = Trainer(
-            network=network,
-            tokenizer=tokenizer,
-            criterion=nn.CrossEntropyLoss(),
-            log_dir=opt.checkpoint_dir,
-            use_waveform=use_waveform,
-        )
-    else:
-        trainer = BatchTrainer(
-            network=network,
-            tokenizer=tokenizer,
-            criterion=nn.CrossEntropyLoss(),
-            log_dir=opt.checkpoint_dir,
-            use_waveform=use_waveform,
-        )
+    trainer = Trainer(
+        network=network,
+        criterion=nn.CrossEntropyLoss(),
+        log_dir=opt.checkpoint_dir,
+    )
+    logging.info("Start training...")
     # Build optimizer and criterion
     optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma)

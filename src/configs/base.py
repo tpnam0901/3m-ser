@@ -50,7 +50,7 @@ class Config(BaseConfig):
 
     def set_args(self, **kwargs):
         self.num_epochs = 200
-        self.checkpoint_dir = "checkpoints_panns"
+        self.checkpoint_dir = "checkpoints"
         self.save_freq = 4000
         self.batch_size = 16
 
@@ -60,7 +60,7 @@ class Config(BaseConfig):
         self.learning_rate_gamma = 0.1
 
         # Dataset
-        self.data_root = "data/PANNS"  # [data/3M-SER, data/PANNS]
+        self.data_root = "data/IEMOCAP"
         self.text_max_length = 297
         self.audio_max_length = 546220
 
@@ -68,12 +68,13 @@ class Config(BaseConfig):
         self.num_classes = 4
         self.num_attention_head = 8
         self.dropout = 0.5
-        self.model_type = "MMSERALayerNorm"  # [MMSERA, MMSERAMinMax, MMSERALayerNorm, AudioModel]
+        self.model_type = "MMSERA"  # [MMSERA, AudioModel]
         self.text_encoder_type = "bert"  # [bert]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
         self.audio_encoder_type = "panns"  # [vggish, panns]
         self.audio_encoder_dim = 2048  # 2048 for panns, 128 for vggish
+        self.audio_norm_type = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze = True
 
         for key, value in kwargs.items():

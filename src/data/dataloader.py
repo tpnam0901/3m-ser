@@ -6,6 +6,7 @@ import numpy as np
 import soundfile as sf
 import torch
 from torch.utils.data import DataLoader, Dataset
+from torchvggish.vggish_input import waveform_to_examples
 from transformers import BertTokenizer
 
 
@@ -16,6 +17,7 @@ class IEMOCAPDataset(Dataset):
         tokenizer: BertTokenizer = BertTokenizer.from_pretrained("bert-base-uncased"),
         audio_max_length: int = 546220,
         text_max_length: int = 100,
+        audio_encoder_type: str = "vggish",
     ):
         """Dataset for IEMOCAP
 
@@ -31,6 +33,7 @@ class IEMOCAPDataset(Dataset):
         self.audio_max_length = audio_max_length
         self.text_max_length = text_max_length
         self.tokenizer = tokenizer
+        self.audio_encoder_type = audio_encoder_type
 
     def __getitem__(self, index: int) -> Dict[str, np.ndarray]:
         fileName, text, sprectrome, label = self.data_list[index].values()
@@ -40,6 +43,10 @@ class IEMOCAPDataset(Dataset):
             samples = np.pad(samples, (0, self.audio_max_length - samples.shape[0]), "constant")
         elif self.audio_max_length is not None:
             samples = samples[: self.audio_max_length]
+
+        if self.audio_encoder_type == "vggish":
+            samples = waveform_to_examples(samples, sr, return_tensor=False)  # num_samples, 96, 64
+            samples = np.expand_dims(samples, axis=1)  # num_samples, 1, 96, 64
 
         input_ids = self.tokenizer.encode(text, add_special_tokens=True)
         if self.text_max_length is not None and len(input_ids) < self.text_max_length:
@@ -58,29 +65,13 @@ class IEMOCAPDataset(Dataset):
         return len(self.data_list)
 
 
-def build_train_test_dataset(root: str = "data/") -> Tuple[List, List]:
-    """Read train and test data from pickle files
-
-    Args:
-        root (str, optional): Path to data directory. Defaults to "data/".
-        Your data directory should contain train_data.pkl and test_data.pkl
-
-    Returns:
-        Tuple[List, List]: Tuple of train and test data
-    """
-    with open(os.path.join(root, "train_data.pkl"), "rb") as train_file:
-        train_list = pickle.load(train_file)
-    with open(os.path.join(root, "test_data.pkl"), "rb") as test_file:
-        test_list = pickle.load(test_file)
-    return (train_list, test_list)
-
-
-def build_batch_train_test_dataset(
+def build_train_test_dataset(
     root: str = "data/",
     batch_size: int = 64,
     tokenizer: BertTokenizer = BertTokenizer.from_pretrained("bert-base-uncased"),
     audio_max_length: int = 546220,
     text_max_length: int = 100,
+    audio_encoder_type: str = "vggish",
 ) -> Tuple[DataLoader, DataLoader]:
     """Read train and test data from pickle files
 
@@ -94,8 +85,10 @@ def build_batch_train_test_dataset(
     if batch_size == 1:
         audio_max_length = None
         text_max_length = None
-    training_data = IEMOCAPDataset(os.path.join(root, "train_data.pkl"), tokenizer, audio_max_length, text_max_length)
-    test_data = IEMOCAPDataset(os.path.join(root, "test_data.pkl"), tokenizer, None, None)
+    training_data = IEMOCAPDataset(
+        os.path.join(root, "train_data.pkl"), tokenizer, audio_max_length, text_max_length, audio_encoder_type
+    )
+    test_data = IEMOCAPDataset(os.path.join(root, "test_data.pkl"), tokenizer, None, None, audio_encoder_type)
 
     train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_data, batch_size=1, shuffle=False)
