@@ -19,7 +19,7 @@ class Base(ABC):
 
 class BaseConfig(Base):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(BaseConfig, self).__init__(**kwargs)
 
     def show(self):
         for key, value in self.__dict__.items():
@@ -42,7 +42,7 @@ class BaseConfig(Base):
 class Config(BaseConfig):
     # Base
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(Config, self).__init__(**kwargs)
         self.name = "default"
         self.set_args()
         for key, value in kwargs.items():
@@ -52,7 +52,7 @@ class Config(BaseConfig):
         self.num_epochs = 200
         self.checkpoint_dir = "checkpoints"
         self.save_freq = 4000
-        self.batch_size = 16
+        self.batch_size = 2
 
         # Learning rate
         self.learning_rate = 0.0001
@@ -72,8 +72,8 @@ class Config(BaseConfig):
         self.text_encoder_type = "bert"  # [bert]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
-        self.audio_encoder_type = "panns"  # [vggish, panns]
-        self.audio_encoder_dim = 2048  # 2048 for panns, 128 for vggish
+        self.audio_encoder_type = "panns"  # [vggish, panns, hubert_base, wav2vec2_base, wavlm_base]
+        self.audio_encoder_dim = 2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base
         self.audio_norm_type = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze = True
 

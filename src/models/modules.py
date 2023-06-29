@@ -7,10 +7,36 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchaudio
 from torchvggish import vggish
 from transformers import BertConfig, BertModel
 
 from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
+
+
+def build_bert_encoder() -> nn.Module:
+    """A function to build bert encoder"""
+    config = BertConfig.from_pretrained("bert-base-uncased", output_hidden_states=True)
+    bert = BertModel.from_pretrained("bert-base-uncased", config=config)
+    return bert
+
+
+class VGGish(nn.Module):
+    def __init__(self):
+        super(VGGish, self).__init__()
+        self.vggish = vggish()
+
+    def forward(self, x):
+        out = []
+        for i in range(x.size(0)):
+            out.append(self.vggish(x[i]))
+        x = torch.stack(out, axis=0)
+        return x
+
+
+def build_vggish_encoder() -> nn.Module:
+    """A function to build vggish encoder"""
+    return VGGish()
 
 
 class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
@@ -68,45 +94,6 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
         return embedding
 
 
-class VGGish(nn.Module):
-    def __init__(self):
-        super(VGGish, self).__init__()
-        self.vggish = vggish()
-
-    def forward(self, x):
-        out = []
-        for i in range(x.size(0)):
-            out.append(self.vggish(x[i]))
-        x = torch.stack(out, axis=0)
-        return x
-
-
-def build_bert_encoder() -> nn.Module:
-    """A function to build bert encoder"""
-    config = BertConfig.from_pretrained("bert-base-uncased", output_hidden_states=True)
-    bert = BertModel.from_pretrained("bert-base-uncased", config=config)
-    return bert
-
-
-def build_text_encoder(type: str = "bert") -> nn.Module:
-    """A function to build text encoder
-
-    Args:
-        type (str, optional): Type of text encoder. Defaults to "bert".
-
-    Returns:
-        torch.nn.Module: Text encoder
-    """
-    encoders = {"bert": build_bert_encoder}
-    assert type in encoders.keys(), f"Invalid text encoder type: {type}"
-    return encoders[type]()
-
-
-def build_vggish_encoder() -> nn.Module:
-    """A function to build vggish encoder"""
-    return VGGish()
-
-
 def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
     """A function to build panns encoder"""
     panns = {
@@ -147,6 +134,52 @@ def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
     return model
 
 
+class HuBertBase(nn.Module):
+    def __init__(self, **kwargs):
+        super(HuBertBase, self).__init__(**kwargs)
+        bundle = torchaudio.pipelines.HUBERT_BASE
+        self.model = bundle.get_model()
+
+    def forward(self, x):
+        features, _ = self.model(x)
+        return features
+
+
+def build_hubert_base_encoder() -> nn.Module:
+    """A function to build hubert encoder"""
+    return HuBertBase()
+
+
+class Wav2Vec2Base(nn.Module):
+    def __init__(self, **kwargs):
+        super(Wav2Vec2Base, self).__init__(**kwargs)
+        bundle = torchaudio.pipelines.WAV2VEC2_BASE
+        self.model = bundle.get_model()
+
+    def forward(self, x):
+        features, _ = self.model(x)
+        return features
+
+
+def build_wav2vec2_base_encoder() -> nn.Module:
+    return Wav2Vec2Base()
+
+
+class WavlmBase(nn.Module):
+    def __init__(self, **kwargs):
+        super(WavlmBase, self).__init__(**kwargs)
+        bundle = torchaudio.pipelines.WAVLM_BASE
+        self.model = bundle.get_model()
+
+    def forward(self, x):
+        features, _ = self.model(x)
+        return features
+
+
+def build_wavlm_base_encoder() -> nn.Module:
+    return WavlmBase()
+
+
 def build_audio_encoder(type: str = "vggish") -> nn.Module:
     """A function to build audio encoder
 
@@ -159,6 +192,23 @@ def build_audio_encoder(type: str = "vggish") -> nn.Module:
     encoders = {
         "vggish": build_vggish_encoder,
         "panns": build_panns_encoder,
+        "hubert_base": build_hubert_base_encoder,
+        "wav2vec2_base": build_wav2vec2_base_encoder,
+        "wavlm_base": build_wavlm_base_encoder,
     }
     assert type in encoders.keys(), f"Invalid audio encoder type: {type}"
+    return encoders[type]()
+
+
+def build_text_encoder(type: str = "bert") -> nn.Module:
+    """A function to build text encoder
+
+    Args:
+        type (str, optional): Type of text encoder. Defaults to "bert".
+
+    Returns:
+        torch.nn.Module: Text encoder
+    """
+    encoders = {"bert": build_bert_encoder}
+    assert type in encoders.keys(), f"Invalid text encoder type: {type}"
     return encoders[type]()
