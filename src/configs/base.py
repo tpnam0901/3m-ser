@@ -52,7 +52,7 @@ class Config(BaseConfig):
         self.num_epochs = 200
         self.checkpoint_dir = "checkpoints_panns"
         self.save_freq = 4000
-        self.batch_size = 64
+        self.batch_size = 16
 
         # Learning rate
         self.learning_rate = 0.0001
