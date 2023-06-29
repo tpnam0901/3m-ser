@@ -102,7 +102,7 @@ def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
     weights = {
         "Wavegram_Logmel_Cnn14": (
             "Wavegram_Logmel_Cnn14_mAP=0.439.pth",
-            "https://zenodo.org/record/3987831/files/Wavegram_Logmel_Cnn14_mAP%3D0.439.pth?download=1",
+            "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/somethings/Wavegram_Logmel_Cnn14_mAP.0.439.pth",
         ),
     }
     assert type in ["Wavegram_Logmel_Cnn14"], f"Do not support {type}"
