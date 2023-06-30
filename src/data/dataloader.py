@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import soundfile as sf
 import torch
+import torchaudio
 from torch.utils.data import DataLoader, Dataset
 from torchvggish.vggish_input import waveform_to_examples
 from transformers import BertTokenizer
@@ -47,6 +48,8 @@ class IEMOCAPDataset(Dataset):
         if self.audio_encoder_type == "vggish":
             samples = waveform_to_examples(samples, sr, return_tensor=False)  # num_samples, 96, 64
             samples = np.expand_dims(samples, axis=1)  # num_samples, 1, 96, 64
+        elif self.audio_encoder_type != "panns":
+            samples = torchaudio.functional.resample(samples, sr, 16000)
 
         input_ids = self.tokenizer.encode(text, add_special_tokens=True)
         if self.text_max_length is not None and len(input_ids) < self.text_max_length:
