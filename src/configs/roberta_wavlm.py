@@ -5,7 +5,7 @@ class Config(BaseConfig):
     # Base
     def __init__(self, **kwargs):
         super(Config, self).__init__(**kwargs)
-        self.name = "bert_hubert"
+        self.name = "roberta_hubert"
         self.add_args()
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -14,7 +14,7 @@ class Config(BaseConfig):
         self.batch_size = 1
 
         self.model_type = "MMSERA"  # [MMSERA, AudioModel]
-        self.text_encoder_type = "bert"  # [bert, roberta]
+        self.text_encoder_type = "roberta"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
         self.audio_encoder_type = "wavlm_base"  # [vggish, panns, hubert_base, wav2vec2_base]

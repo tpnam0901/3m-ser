@@ -11,16 +11,16 @@ class Config(BaseConfig):
             setattr(self, key, value)
 
     def add_args(self, **kwargs):
-        self.batch_size = 2
+        self.batch_size = 1
 
         self.model_type = "MMSERA"  # [MMSERA, AudioModel]
-        self.text_encoder_type = "bert"  # [bert]
+        self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
         self.audio_encoder_type = "wav2vec2_base"  # [vggish, panns, hubert_base, wav2vec2_base]
         self.audio_encoder_dim = 768  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base
         self.audio_norm_type = "layer_norm"  # [layer_norm, min_max, None]
-        self.audio_unfreeze = True
+        self.audio_unfreeze = False
 
         for key, value in kwargs.items():
             setattr(self, key, value)

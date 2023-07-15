@@ -69,7 +69,7 @@ class Config(BaseConfig):
         self.num_attention_head = 8
         self.dropout = 0.5
         self.model_type = "MMSERA"  # [MMSERA, AudioModel]
-        self.text_encoder_type = "bert"  # [bert]
+        self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
         self.audio_encoder_type = "panns"  # [vggish, panns, hubert_base, wav2vec2_base, wavlm_base]

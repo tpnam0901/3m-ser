@@ -12,7 +12,7 @@ import random
 import numpy as np
 import torch
 from torch import nn, optim
-from transformers import BertTokenizer
+from transformers import BertTokenizer, RobertaTokenizer
 
 from configs.base import Config
 from data.dataloader import build_train_test_dataset
@@ -48,7 +48,12 @@ def main(opt: Config):
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
 
     logging.info("Initializing checkpoint directory and dataset...")
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    if opt.text_encoder_type == "bert":
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    elif opt.text_encoder_type == "roberta":
+        tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+    else:
+        raise NotImplementedError("Tokenizer {} is not implemented".format(opt.text_encoder_type))
 
     # Preapre the checkpoint directory
     opt.checkpoint_dir = checkpoint_dir = os.path.join(

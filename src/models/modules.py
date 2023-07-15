@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
 from torchvggish import vggish
-from transformers import BertConfig, BertModel
+from transformers import BertConfig, BertModel, RobertaConfig, RobertaModel
 
 from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
 
@@ -19,6 +19,13 @@ def build_bert_encoder() -> nn.Module:
     config = BertConfig.from_pretrained("bert-base-uncased", output_hidden_states=True)
     bert = BertModel.from_pretrained("bert-base-uncased", config=config)
     return bert
+
+
+def build_roberta_encoder() -> nn.Module:
+    """A function to build bert encoder"""
+    config = RobertaConfig.from_pretrained("roberta-base", output_hidden_states=True)
+    roberta = RobertaModel.from_pretrained("roberta-base", config=config)
+    return roberta
 
 
 class VGGish(nn.Module):
@@ -209,6 +216,9 @@ def build_text_encoder(type: str = "bert") -> nn.Module:
     Returns:
         torch.nn.Module: Text encoder
     """
-    encoders = {"bert": build_bert_encoder}
+    encoders = {
+        "bert": build_bert_encoder,
+        "roberta": build_roberta_encoder,
+    }
     assert type in encoders.keys(), f"Invalid text encoder type: {type}"
     return encoders[type]()

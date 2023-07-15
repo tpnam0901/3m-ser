@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import soundfile as sf
@@ -8,14 +8,14 @@ import torch
 import torchaudio
 from torch.utils.data import DataLoader, Dataset
 from torchvggish.vggish_input import waveform_to_examples
-from transformers import BertTokenizer
+from transformers import BertTokenizer, RobertaTokenizer
 
 
 class IEMOCAPDataset(Dataset):
     def __init__(
         self,
         path: str = "path/to/data.pkl",
-        tokenizer: BertTokenizer = BertTokenizer.from_pretrained("bert-base-uncased"),
+        tokenizer: Union[BertTokenizer, RobertaTokenizer] = BertTokenizer.from_pretrained("bert-base-uncased"),
         audio_max_length: int = 546220,
         text_max_length: int = 100,
         audio_encoder_type: str = "vggish",
