@@ -5,7 +5,7 @@ from .modules import build_audio_encoder, build_text_encoder
 
 
 # Create audio only model
-class AudioModel(nn.Module):
+class AudioOnly(nn.Module):
     def __init__(
         self,
         num_classes=4,
@@ -28,12 +28,11 @@ class AudioModel(nn.Module):
             dropout (float, optional): Whether to use dropout. Defaults to 0.5.
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(AudioModel, self).__init__()
+        super(AudioOnly, self).__init__()
 
         # Audio module
         self.audio_encoder = build_audio_encoder(audio_encoder_type)
         self.audio_encoder.to(device)
-        # self.audio_encoder_layer_norm = nn.LayerNorm(audio_encoder_dim)
         # Freeze/Unfreeze the audio module
         for param in self.audio_encoder.parameters():
             param.requires_grad = audio_unfreeze
@@ -56,6 +55,55 @@ class AudioModel(nn.Module):
         audio_embeddings = audio_embeddings.view(audio_embeddings.size(0), -1)
         # Classification head
         x = self.dropout(audio_embeddings)
+        x = self.linear(x)
+        x = nn.functional.leaky_relu(x)
+        out = self.classifer(x)
+
+        return out
+
+
+# Create audio only model
+class TextOnly(nn.Module):
+    def __init__(
+        self,
+        num_classes=4,
+        num_attention_head=8,
+        dropout=0.5,
+        text_encoder_type="bert",
+        text_encoder_dim=768,
+        text_unfreeze=False,
+        audio_encoder_type="vggish",
+        audio_encoder_dim=128,
+        audio_unfreeze=True,
+        audio_norm_type="layer_norm",
+        device="cpu",
+    ):
+        """
+
+        Args: MMSERA model extends from MMSER model in the paper
+            num_classes (int, optional): The number of classes. Defaults to 4.
+            num_attention_head (int, optional): The number of self-attention heads. Defaults to 8.
+            dropout (float, optional): Whether to use dropout. Defaults to 0.5.
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(AudioOnly, self).__init__()
+
+        # Text module
+        self.text_encoder = build_text_encoder(text_encoder_type)
+        self.text_encoder.to(device)
+        # Freeze/Unfreeze the text module
+        for param in self.text_encoder.parameters():
+            param.requires_grad = text_unfreeze
+
+        self.dropout = nn.Dropout(dropout)
+        self.linear = nn.Linear(audio_encoder_dim, audio_encoder_dim)
+        self.classifer = nn.Linear(audio_encoder_dim, num_classes)
+
+    def forward(self, input_ids, audio, output_attentions=False):
+        # Text processing
+        text_embeddings = self.text_encoder(input_ids).pooler_output
+        # Classification head
+        x = self.dropout(text_embeddings)
         x = self.linear(x)
         x = nn.functional.leaky_relu(x)
         out = self.classifer(x)

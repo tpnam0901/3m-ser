@@ -68,7 +68,7 @@ class Config(BaseConfig):
         self.num_classes = 4
         self.num_attention_head = 8
         self.dropout = 0.5
-        self.model_type = "MMSERA"  # [MMSERA, AudioModel]
+        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly]
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
