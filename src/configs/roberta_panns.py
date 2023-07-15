@@ -13,7 +13,7 @@ class Config(BaseConfig):
     def add_args(self, **kwargs):
         self.batch_size = 1
 
-        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly]
+        self.model_type = "MMSERA"  # # [MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module]
         self.text_encoder_type = "roberta"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
