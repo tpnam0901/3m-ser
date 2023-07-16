@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/namphuongtran9196/3m-ser-private/compare/v0.2.0...v0.2.1) (2023-07-16)
+
+
+### Documentation
+
+* update train scripts, add pretrained link ([428c95e](https://github.com/namphuongtran9196/3m-ser-private/commit/428c95e11011236b735d455126caf74e96398c89))
+
 ## [0.2.0](https://github.com/namphuongtran9196/3m-ser-private/compare/v0.1.0...v0.2.0) (2023-07-16)
 
 
