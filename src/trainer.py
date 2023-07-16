@@ -3,12 +3,17 @@ from typing import Dict, Union
 import torch
 from torch import Tensor
 
-from models.networks import MMSERA, AudioModel
+from models.networks import MMSERA, AudioOnly, MMSERA_without_fusion_module, TextOnly
 from utils.torch.trainer import TorchTrainer
 
 
 class Trainer(TorchTrainer):
-    def __init__(self, network: Union[MMSERA, AudioModel], criterion: torch.nn.CrossEntropyLoss = None, **kwargs):
+    def __init__(
+        self,
+        network: Union[MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module],
+        criterion: torch.nn.CrossEntropyLoss = None,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         self.network = network
         self.criterion = criterion
