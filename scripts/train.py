@@ -12,7 +12,7 @@ import random
 import numpy as np
 import torch
 from torch import nn, optim
-from transformers import BertTokenizer
+from transformers import BertTokenizer, RobertaTokenizer
 
 from configs.base import Config
 from data.dataloader import build_train_test_dataset
@@ -29,21 +29,37 @@ torch.cuda.manual_seed_all(SEED)
 
 
 def main(opt: Config):
+    logging.info("Initializing model...")
     # Model
     try:
         network = getattr(networks, opt.model_type)(
             num_classes=opt.num_classes,
             num_attention_head=opt.num_attention_head,
             dropout=opt.dropout,
+            text_encoder_type=opt.text_encoder_type,
+            text_encoder_dim=opt.text_encoder_dim,
+            text_unfreeze=opt.text_unfreeze,
+            audio_encoder_type=opt.audio_encoder_type,
+            audio_encoder_dim=opt.audio_encoder_dim,
+            audio_unfreeze=opt.audio_unfreeze,
+            audio_norm_type=opt.audio_norm_type,
         )
     except AttributeError:
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
 
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    logging.info("Initializing checkpoint directory and dataset...")
+    if opt.text_encoder_type == "bert":
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    elif opt.text_encoder_type == "roberta":
+        tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+    else:
+        raise NotImplementedError("Tokenizer {} is not implemented".format(opt.text_encoder_type))
 
     # Preapre the checkpoint directory
     opt.checkpoint_dir = checkpoint_dir = os.path.join(
-        os.path.abspath(opt.checkpoint_dir), opt.model_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        os.path.abspath(opt.checkpoint_dir),
+        opt.model_type + opt.audio_norm_type + "_" + opt.audio_encoder_type + "_" + opt.text_encoder_type,
+        datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),
     )
     log_dir = os.path.join(checkpoint_dir, "logs")
     weight_dir = os.path.join(checkpoint_dir, "weights")
@@ -52,9 +68,21 @@ def main(opt: Config):
     opt.save(opt)
 
     # Build dataset
-    train_ds, test_ds = build_train_test_dataset(opt.data_root)
+    train_ds, test_ds = build_train_test_dataset(
+        opt.data_root,
+        opt.batch_size,
+        tokenizer,
+        opt.audio_max_length,
+        text_max_length=opt.text_max_length,
+        audio_encoder_type=opt.audio_encoder_type,
+    )
 
-    trainer = Trainer(network=network, tokenizer=tokenizer, criterion=nn.CrossEntropyLoss(), log_dir=opt.checkpoint_dir)
+    trainer = Trainer(
+        network=network,
+        criterion=nn.CrossEntropyLoss(),
+        log_dir=opt.checkpoint_dir,
+    )
+    logging.info("Start training...")
     # Build optimizer and criterion
     optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma)

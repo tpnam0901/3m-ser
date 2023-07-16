@@ -7,9 +7,9 @@
 <h4 align="center">Official code repository for paper "Multi-modal Speech Emotion Recognition using Multi-head Attention Fusion of Multi-feature Embeddings". Paper accepted to EAI INISCOM 2023</h4>
 
 <p align="center">
-<a href=""><img src="https://img.shields.io/github/stars/namphuongtran9196/3m-ser" alt="stars"></a>
-<a href=""><img src="https://img.shields.io/github/forks/namphuongtran9196/3m-ser" alt="forks"></a>
-<a href=""><img src="https://img.shields.io/github/license/namphuongtran9196/3m-ser" alt="license"></a>
+<a href=""><img src="https://img.shields.io/github/stars/namphuongtran9196/3m-ser?" alt="stars"></a>
+<a href=""><img src="https://img.shields.io/github/forks/namphuongtran9196/3m-ser?" alt="forks"></a>
+<a href=""><img src="https://img.shields.io/github/license/namphuongtran9196/3m-ser?" alt="license"></a>
 </p>
 
 <p align="center">
@@ -23,20 +23,20 @@
 </p>
 
 ## Abstract
-> Recent research has shown that multi-modal learning is a successful method for enhancing classification performance by mixing several forms of input, notably in speech-emotion recognition (SER) tasks. However, the difference between the modalities may affect SER performance. To overcome this problem, a novel approach for multi-modal SER called 3M-SER is proposed in this paper. The 3M-SER leverages multi-head attention to fuse information from multiple feature embeddings, including audio and text features. The 3M-SER approach is based on the SERVER approach but includes an additional fusion module that improves the integration of text and audio features, leading to improved classification performance. To further enhance the correlation between the modalities, a LayerNorm is applied to audio features prior to fusion. Our approach achieved an unweighted accuracy (UA) and weighted accuracy (WA) of 66.88% and 67.21%, respectively, on the IEMOCAP benchmark dataset. This indicates that the proposed approach is better than SERVER and recent methods with similar approaches. In addition, it highlights the effectiveness of incorporating an extra fusion module in multi-modal learning.
+> Recent research has shown that multi-modal learning is a successful method for enhancing classification performance by mixing several forms of input, notably in speech-emotion recognition (SER) tasks. However, the difference between the modalities may affect SER performance. To overcome this problem, a novel approach for multi-modal SER called 3M-SER is proposed in this paper. The 3M-SER leverages multi-head attention to fuse information from multiple feature embeddings, including audio and text features. The 3M-SER approach is based on the SERVER approach but includes an additional fusion module that improves the integration of text and audio features, leading to improved classification performance. To further enhance the correlation between the modalities, a LayerNorm is applied to audio features prior to fusion. Our approach achieved an unweighted accuracy (UA) and weighted accuracy (WA) of 79.96% and 80.66%, respectively, on the IEMOCAP benchmark dataset. This indicates that the proposed approach is better than SERVER and recent methods with similar approaches. In addition, it highlights the effectiveness of incorporating an extra fusion module in multi-modal learning.
 ## Key Features
 - 3M-SER - a multi-modal speech emotion recognition model that uses multi-head attention fusion of multi-feature embeddings to learn the relationship between speech and emotion.
 ## How To Use
 - Clone this repository 
 ```bash
-git clone https://github.com/namphuongtran9196/3m-ser-private.git 
+git clone https://github.com/namphuongtran9196/3m-ser.git 
 cd 3m-ser
 ```
 - Create a conda environment and install requirements
 ```bash
 conda create -n 3m-ser python=3.8 -y
 conda activate 3m-ser
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia -y
+conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install -r requirements.txt
 ```
 - There are some error with torchvggish when using with GPU. Please change the code at line 58,59 in file torchvggish/model.py to accept the GPU:
@@ -63,12 +63,7 @@ cd scripts && python main.py train
 - We use the [Unlicense](https://unlicense.org/) license. You can use it for any purpose.
 
 ## Citation
-If you use this code or part of it, please cite the following papers:
-```
-@inproceedings{
-
-}
-```
+If you use this code or part of it, please cite our work. On GitHub, you can copy this citation in APA or BibTeX format via the "Cite this repository" button. Or, see the comments in CITATION.cff for the raw BibTeX.
 
 ## References
 

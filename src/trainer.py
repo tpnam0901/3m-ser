@@ -2,19 +2,20 @@ from typing import Dict, Union
 
 import torch
 from torch import Tensor
-from transformers import BertTokenizer
 
-from models.networks import MMSERA, MMSERALayerNorm
+from models.networks import MMSERA, AudioOnly, MMSERA_without_fusion_module, TextOnly
 from utils.torch.trainer import TorchTrainer
 
 
 class Trainer(TorchTrainer):
     def __init__(
-        self, network: Union[MMSERA, MMSERALayerNorm], tokenizer: BertTokenizer, criterion: torch.nn.CrossEntropyLoss, **kwargs
+        self,
+        network: Union[MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module],
+        criterion: torch.nn.CrossEntropyLoss = None,
+        **kwargs
     ):
         super().__init__(**kwargs)
         self.network = network
-        self.tokenizer = tokenizer
         self.criterion = criterion
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.network.to(self.device)
@@ -24,17 +25,15 @@ class Trainer(TorchTrainer):
         self.optimizer.zero_grad()
 
         # Prepare batch
-        text, label, sprectrome = batch["text"], batch["label"], batch["sprectrome"]
-        label = torch.tensor([int(label)])
-        input_ids = torch.tensor(self.tokenizer.encode(text, add_special_tokens=True)).unsqueeze(0)
+        input_ids, audio, label = batch
 
         # Move inputs to cpu or gpu
-        sprectrome = sprectrome.to(self.device)
+        audio = audio.to(self.device)
         label = label.to(self.device)
         input_ids = input_ids.to(self.device)
 
         # Forward pass
-        output = self.network(input_ids, sprectrome)
+        output = self.network(input_ids, audio)
         loss = self.criterion(output, label)
 
         # Backward pass
@@ -49,18 +48,15 @@ class Trainer(TorchTrainer):
     def test_step(self, batch: Dict[str, Tensor]) -> Dict[str, Tensor]:
         self.network.eval()
         # Prepare batch
-        text, label, sprectrome = batch["text"], batch["label"], batch["sprectrome"]
-        label = torch.tensor([int(label)])
-        input_ids = torch.tensor(self.tokenizer.encode(text, add_special_tokens=True)).unsqueeze(0)
+        input_ids, audio, label = batch
 
         # Move inputs to cpu or gpu
-        sprectrome = sprectrome.to(self.device)
+        audio = audio.to(self.device)
         label = label.to(self.device)
         input_ids = input_ids.to(self.device)
-
         with torch.no_grad():
             # Forward pass
-            output = self.network(input_ids, sprectrome)
+            output = self.network(input_ids, audio)
             loss = self.criterion(output, label)
             # Calculate accuracy
             _, preds = torch.max(output, 1)
