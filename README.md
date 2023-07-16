@@ -54,8 +54,12 @@ cd scripts && python preprocess.py --data_root <path_to_iemocap_dataset> --outpu
 
 - Before starting training, you need to modify the [config file](./src/configs/base.py) in the config folder. You can refer to the config file in the config folder for more details.
 ```bash
-cd scripts && python main.py train
+cd scripts && python train.py -cfg <path_to_config_file>
 ```
+
+- You can visualize the confusion matrix of the model on the test set by following the instructions in the [notebook](./src/visualization/confusion_matrix.ipynb).
+
+- You can also find our pre-trained models in the [release](https://github.com/namphuongtran9196/3m-ser-private/releases).
 
 ## Download
 - We provide some pre-trained models which achieve the results as in the paper. You can download them [here](https://github.com/namphuongtran9196/3m-ser-private/releases).
