@@ -16,7 +16,7 @@ from transformers import BertTokenizer, RobertaTokenizer
 
 from configs.base import Config
 from data.dataloader import build_train_test_dataset
-from models import networks
+from models import losses, networks
 from trainer import Trainer
 from utils.configs import get_options
 from utils.torch.callbacks import CheckpointsCallback
@@ -26,6 +26,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main(opt: Config):
@@ -43,7 +44,9 @@ def main(opt: Config):
             audio_encoder_dim=opt.audio_encoder_dim,
             audio_unfreeze=opt.audio_unfreeze,
             audio_norm_type=opt.audio_norm_type,
+            fusion_head_output_type=opt.fusion_head_output_type,
         )
+        network.to(device)
     except AttributeError:
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
 
@@ -58,7 +61,7 @@ def main(opt: Config):
     # Preapre the checkpoint directory
     opt.checkpoint_dir = checkpoint_dir = os.path.join(
         os.path.abspath(opt.checkpoint_dir),
-        opt.model_type + opt.audio_norm_type + "_" + opt.audio_encoder_type + "_" + opt.text_encoder_type,
+        opt.name,
         datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),
     )
     log_dir = os.path.join(checkpoint_dir, "logs")
@@ -77,9 +80,35 @@ def main(opt: Config):
         audio_encoder_type=opt.audio_encoder_type,
     )
 
+    logging.info("Initializing trainer...")
+    if opt.loss_type == "CrossEntropyLoss":
+        criterion = losses.CrossEntropyLoss()
+        criterion.to(device=device)
+    elif opt.loss_type == "CrossEntropyLoss_ContrastiveCenterLoss" and opt.model_type != "SERVER":
+        criterion = losses.CrossEntropyLoss_ContrastiveCenterLoss(
+            feat_dim=opt.audio_encoder_dim, num_classes=opt.num_classes, lambda_c=opt.lambda_c
+        )
+        criterion.to(device=device)
+    elif opt.loss_type == "CrossEntropyLoss_ContrastiveCenterLoss":
+        criterion = losses.CrossEntropyLoss_ContrastiveCenterLossForServer(
+            fusion_dim=opt.audio_encoder_dim * 2,
+            text_dim=opt.audio_encoder_dim,
+            audio_dim=opt.audio_encoder_dim,
+            num_classes=opt.num_classes,
+            lambda_c=opt.lambda_c,
+        )
+        criterion.to(device=device)
+    elif opt.loss_type == "CrossEntropyLoss_CenterLoss":
+        criterion = losses.CrossEntropyLoss_CenterLoss(
+            feat_dim=opt.audio_encoder_dim, num_classes=opt.num_classes, lambda_c=opt.lambda_c
+        )
+        criterion.to(device=device)
+    else:
+        raise NotImplementedError("Loss {} is not implemented".format(opt.loss_type))
+
     trainer = Trainer(
         network=network,
-        criterion=nn.CrossEntropyLoss(),
+        criterion=criterion,
         log_dir=opt.checkpoint_dir,
     )
     logging.info("Start training...")

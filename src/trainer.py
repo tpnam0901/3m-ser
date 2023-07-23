@@ -3,16 +3,13 @@ from typing import Dict, Union
 import torch
 from torch import Tensor
 
-from models.networks import MMSERA, AudioOnly, MMSERA_without_fusion_module, TextOnly
+from models.networks import MMSERA, SERVER, AudioOnly, TextOnly
 from utils.torch.trainer import TorchTrainer
 
 
 class Trainer(TorchTrainer):
     def __init__(
-        self,
-        network: Union[MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module],
-        criterion: torch.nn.CrossEntropyLoss = None,
-        **kwargs
+        self, network: Union[MMSERA, AudioOnly, TextOnly, SERVER], criterion: torch.nn.CrossEntropyLoss = None, **kwargs
     ):
         super().__init__(**kwargs)
         self.network = network
@@ -41,7 +38,7 @@ class Trainer(TorchTrainer):
         self.optimizer.step()
 
         # Calculate accuracy
-        _, preds = torch.max(output, 1)
+        _, preds = torch.max(output[0], 1)
         accuracy = torch.mean((preds == label).float())
         return {"loss": loss.detach().cpu().item(), "acc": accuracy.detach().cpu().item()}
 
@@ -59,6 +56,6 @@ class Trainer(TorchTrainer):
             output = self.network(input_ids, audio)
             loss = self.criterion(output, label)
             # Calculate accuracy
-            _, preds = torch.max(output, 1)
+            _, preds = torch.max(output[0], 1)
             accuracy = torch.mean((preds == label).float())
         return {"loss": loss.detach().cpu().item(), "acc": accuracy.detach().cpu().item()}

@@ -54,6 +54,11 @@ class Config(BaseConfig):
         self.save_freq = 4000
         self.batch_size = 2
 
+        self.loss_type = (
+            "CrossEntropyLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss]
+        )
+        self.lambda_c = 1.0  # For CrossEntropyLoss_ContrastiveCenterLoss
+
         # Learning rate
         self.learning_rate = 0.0001
         self.learning_rate_step_size = 30
@@ -68,7 +73,7 @@ class Config(BaseConfig):
         self.num_classes = 4
         self.num_attention_head = 8
         self.dropout = 0.5
-        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module]
+        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER]
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
@@ -76,6 +81,10 @@ class Config(BaseConfig):
         self.audio_encoder_dim = 2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base
         self.audio_norm_type = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze = True
+
+        self.fusion_head_output_type = "cls"  # [cls, mean, max]
+
+        self.optim_attributes = None  # For hyperparameter search
 
         for key, value in kwargs.items():
             setattr(self, key, value)

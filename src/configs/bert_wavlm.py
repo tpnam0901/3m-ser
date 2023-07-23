@@ -5,7 +5,7 @@ class Config(BaseConfig):
     # Base
     def __init__(self, **kwargs):
         super(Config, self).__init__(**kwargs)
-        self.name = "bert_hubert"
+        self.name = "bert_wavlm"
         self.add_args()
         for key, value in kwargs.items():
             setattr(self, key, value)

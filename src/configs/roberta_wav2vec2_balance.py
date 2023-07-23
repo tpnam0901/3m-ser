@@ -5,7 +5,7 @@ class Config(BaseConfig):
     # Base
     def __init__(self, **kwargs):
         super(Config, self).__init__(**kwargs)
-        self.name = "roberta_wavlm"
+        self.name = "roberta_wav2vec2_balance"
         self.add_args()
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -13,11 +13,13 @@ class Config(BaseConfig):
     def add_args(self, **kwargs):
         self.batch_size = 1
 
+        self.data_root = "data/IEMOCAP_balance"
+
         self.model_type = "MMSERA"  # # [MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module]
         self.text_encoder_type = "roberta"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
-        self.audio_encoder_type = "wavlm_base"  # [vggish, panns, hubert_base, wav2vec2_base]
+        self.audio_encoder_type = "wav2vec2_base"  # [vggish, panns, hubert_base, wav2vec2_base]
         self.audio_encoder_dim = 768  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base
         self.audio_norm_type = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze = False

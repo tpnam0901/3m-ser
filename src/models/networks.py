@@ -125,6 +125,7 @@ class MMSERA(nn.Module):
         audio_encoder_dim=128,
         audio_unfreeze=True,
         audio_norm_type="layer_norm",
+        fusion_head_output_type="cls",
         device="cpu",
     ):
         """
@@ -170,6 +171,8 @@ class MMSERA(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(128, 64)
         self.classifer = nn.Linear(64, num_classes)
+
+        self.fusion_head_output_type = fusion_head_output_type
 
     def forward(self, input_ids, audio, output_attentions=False):
         # Text processing
@@ -201,8 +204,15 @@ class MMSERA(nn.Module):
         fusion_linear = self.fusion_linear(fusion_attention)
         fusion_norm = self.fusion_layer_norm(fusion_linear)
 
-        # Get classification token from the fusion module
-        cls_token_final_fusion_norm = fusion_norm[:, 0, :]
+        # Get classification output
+        if self.fusion_head_output_type == "cls":
+            cls_token_final_fusion_norm = fusion_norm[:, 0, :]
+        elif self.fusion_head_output_type == "mean":
+            cls_token_final_fusion_norm = fusion_norm.mean(dim=1)
+        elif self.fusion_head_output_type == "max":
+            cls_token_final_fusion_norm = fusion_norm.max(dim=1)
+        else:
+            raise ValueError("Invalid fusion head output type")
 
         # Classification head
         x = self.dropout(cls_token_final_fusion_norm)
@@ -211,12 +221,12 @@ class MMSERA(nn.Module):
         out = self.classifer(x)
 
         if output_attentions:
-            return out, [text_attn_output_weights, fusion_attn_output_weights]
+            return [out, cls_token_final_fusion_norm], [text_attn_output_weights, fusion_attn_output_weights]
 
-        return out
+        return out, cls_token_final_fusion_norm, text_norm.mean(dim=1), audio_embeddings.mean(dim=1)
 
 
-class MMSERA_without_fusion_module(nn.Module):
+class SERVER(nn.Module):
     def __init__(
         self,
         num_classes=4,
@@ -229,6 +239,7 @@ class MMSERA_without_fusion_module(nn.Module):
         audio_encoder_dim=128,
         audio_unfreeze=True,
         audio_norm_type="layer_norm",
+        fusion_head_output_type="cls",
         device="cpu",
     ):
         """
@@ -239,7 +250,7 @@ class MMSERA_without_fusion_module(nn.Module):
             dropout (float, optional): Whether to use dropout. Defaults to 0.5.
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(MMSERA, self).__init__()
+        super(SERVER, self).__init__()
         # Text module
         self.text_encoder = build_text_encoder(text_encoder_type)
         self.text_encoder.to(device)
@@ -248,52 +259,33 @@ class MMSERA_without_fusion_module(nn.Module):
             param.requires_grad = text_unfreeze
 
         # Audio module
-        self.audio_norm_type = audio_norm_type
         self.audio_encoder = build_audio_encoder(audio_encoder_type)
         self.audio_encoder.to(device)
-        if audio_norm_type == "layer_norm":
-            self.audio_encoder_layer_norm = nn.LayerNorm(audio_encoder_dim)
 
         # Freeze/Unfreeze the audio module
         for param in self.audio_encoder.parameters():
             param.requires_grad = audio_unfreeze
 
-        # Fusion module
-        self.text_attention = nn.MultiheadAttention(
-            embed_dim=text_encoder_dim, num_heads=num_attention_head, dropout=dropout, batch_first=True
-        )
-        self.text_linear = nn.Linear(text_encoder_dim, audio_encoder_dim)
-        self.text_layer_norm = nn.LayerNorm(audio_encoder_dim)
-
-        self.fusion_attention = nn.MultiheadAttention(
-            embed_dim=audio_encoder_dim, num_heads=num_attention_head, dropout=dropout, batch_first=True
-        )
-        self.fusion_linear = nn.Linear(audio_encoder_dim, 128)
-        self.fusion_layer_norm = nn.LayerNorm(128)
-
         self.dropout = nn.Dropout(dropout)
-        self.linear = nn.Linear(128, 64)
+        self.linear1 = nn.Linear(text_encoder_dim, 128)
+        self.linear2 = nn.Linear(256, 64)
         self.classifer = nn.Linear(64, num_classes)
 
     def forward(self, input_ids, audio, output_attentions=False):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).pooler_output
-
+        text_embeddings = self.linear1(text_embeddings)
         # Audio processing
         audio_embeddings = self.audio_encoder(audio)
         # Get classification token from the audio module
-        audio_embeddings = audio_embeddings[:, 0, :]
+        audio_embeddings = audio_embeddings.sum(dim=1)
 
         # Concatenate the text and audio embeddings
         fusion_embeddings = torch.cat((text_embeddings, audio_embeddings), 1)
 
         # Classification head
         x = self.dropout(fusion_embeddings)
-        x = self.linear(x)
-        x = nn.functional.leaky_relu(x)
+        x = self.linear2(x)
         out = self.classifer(x)
 
-        if output_attentions:
-            return out, [text_attn_output_weights, fusion_attn_output_weights]
-
-        return out
+        return out, fusion_embeddings, text_embeddings, audio_embeddings

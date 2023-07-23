@@ -11,7 +11,7 @@ class Config(BaseConfig):
             setattr(self, key, value)
 
     def add_args(self, **kwargs):
-        self.batch_size = 1
+        self.batch_size = 16
 
         self.model_type = "MMSERA"  # # [MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module]
         self.text_encoder_type = "roberta"  # [bert, roberta]
