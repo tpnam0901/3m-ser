@@ -58,6 +58,7 @@ class Config(BaseConfig):
             "CrossEntropyLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss]
         )
         self.lambda_c = 1.0  # For CrossEntropyLoss_ContrastiveCenterLoss
+        self.feat_dim = 2048  # For CrossEntropyLoss_ContrastiveCenterLoss
 
         # Learning rate
         self.learning_rate = 0.0001

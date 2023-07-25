@@ -81,29 +81,14 @@ def main(opt: Config):
     )
 
     logging.info("Initializing trainer...")
-    if opt.loss_type == "CrossEntropyLoss":
-        criterion = losses.CrossEntropyLoss()
-        criterion.to(device=device)
-    elif opt.loss_type == "CrossEntropyLoss_ContrastiveCenterLoss" and opt.model_type != "SERVER":
-        criterion = losses.CrossEntropyLoss_ContrastiveCenterLoss(
-            feat_dim=opt.audio_encoder_dim, num_classes=opt.num_classes, lambda_c=opt.lambda_c
-        )
-        criterion.to(device=device)
-    elif opt.loss_type == "CrossEntropyLoss_ContrastiveCenterLoss":
-        criterion = losses.CrossEntropyLoss_ContrastiveCenterLossForServer(
-            fusion_dim=opt.audio_encoder_dim * 2,
-            text_dim=opt.audio_encoder_dim,
-            audio_dim=opt.audio_encoder_dim,
+    try:
+        criterion = getattr(losses, opt.loss_type)(
+            feat_dim=opt.feat_dim,
             num_classes=opt.num_classes,
             lambda_c=opt.lambda_c,
         )
-        criterion.to(device=device)
-    elif opt.loss_type == "CrossEntropyLoss_CenterLoss":
-        criterion = losses.CrossEntropyLoss_CenterLoss(
-            feat_dim=opt.audio_encoder_dim, num_classes=opt.num_classes, lambda_c=opt.lambda_c
-        )
-        criterion.to(device=device)
-    else:
+        criterion.to(device)
+    except AttributeError:
         raise NotImplementedError("Loss {} is not implemented".format(opt.loss_type))
 
     trainer = Trainer(

@@ -4,6 +4,9 @@ from torch.nn import CrossEntropyLoss as CELoss
 
 
 class CrossEntropyLoss(CELoss):
+    def __init__(self, feat_dim, num_classes, lambda_c=1.0, **kwargs):
+        super(CrossEntropyLoss, self).__init__(**kwargs)
+
     def forward(self, input, target):
         out = input[0]
         return super().forward(out, target)
@@ -57,30 +60,9 @@ class CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
     def forward(self, feat, label):
         logits = feat[0]
         feat_fusion = feat[1]
-        feat_text = feat[2]
-        feat_audio = feat[3]
 
         ce_loss = self.ce_loss(logits, label)
-        cc_loss = self.cc_loss(feat_fusion, label) + self.cc_loss(feat_text, label) + self.cc_loss(feat_audio, label)
-        total_loss = ce_loss + cc_loss
-        return total_loss
-
-
-class CrossEntropyLoss_ContrastiveCenterLossForServer(nn.Module):
-    def __init__(self, fusion_dim, text_dim, audio_dim, num_classes, lambda_c=1.0):
-        super(CrossEntropyLoss_ContrastiveCenterLossForServer, self).__init__()
-        self.ccf_loss = ContrastiveCenterLoss(fusion_dim, num_classes, lambda_c)
-        self.cct_loss = ContrastiveCenterLoss(text_dim, num_classes, lambda_c)
-        self.cca_loss = ContrastiveCenterLoss(audio_dim, num_classes, lambda_c)
-        self.ce_loss = CELoss()
-
-    def forward(self, feat, label):
-        logits = feat[0]
-        feat_fusion = feat[1]
-        feat_text = feat[2]
-        feat_audio = feat[3]
-        ce_loss = self.ce_loss(logits, label)
-        cc_loss = self.ccf_loss(feat_fusion, label) + self.cct_loss(feat_text, label) + self.cca_loss(feat_audio, label)
+        cc_loss = self.cc_loss(feat_fusion, label)
         total_loss = ce_loss + cc_loss
         return total_loss
 
@@ -94,10 +76,22 @@ class CrossEntropyLoss_CenterLoss(nn.Module):
     def forward(self, feat, label):
         logits = feat[0]
         feat_fusion = feat[1]
-        feat_text = feat[2]
-        feat_audio = feat[3]
 
         ce_loss = self.ce_loss(logits, label)
-        c_loss = self.c_loss(feat_fusion, label) + self.c_loss(feat_text, label) + self.c_loss(feat_audio, label)
+        c_loss = self.c_loss(feat_fusion, label)
         total_loss = ce_loss + c_loss
         return total_loss
+
+
+class ContrastiveCenterLossSER(ContrastiveCenterLoss):
+    def forward(self, feat, label):
+        feat_fusion = feat[1]
+        loss = super().forward(feat_fusion, label)
+        return loss
+
+
+class CenterLossSER(CenterLoss):
+    def forward(self, feat, label):
+        feat_fusion = feat[1]
+        loss = super().forward(feat_fusion, label)
+        return loss

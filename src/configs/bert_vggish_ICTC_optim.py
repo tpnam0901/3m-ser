@@ -5,7 +5,7 @@ class Config(BaseConfig):
     # Base
     def __init__(self, **kwargs):
         super(Config, self).__init__(**kwargs)
-        self.name = "SERVER_bert_vggish_ICTC_optim"
+        self.name = "3M-SER_bert_vggish_ICTC_optim"
         self.add_args()
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -15,8 +15,9 @@ class Config(BaseConfig):
         self.num_epochs = 250
 
         self.loss_type = "CrossEntropyLoss_ContrastiveCenterLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss]
+        self.feat_dim = 128
 
-        self.model_type = "SERVER"  # # [MMSERA, AudioOnly, TextOnly, SERVER]
+        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER]
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
@@ -28,7 +29,7 @@ class Config(BaseConfig):
         self.fusion_head_output_type = "mean"  # [cls, mean, max]
 
         # Hyperparameter search
-        self.lambda_c = [x / 10 for x in range(11, 20)]  # For CrossEntropyLoss_ContrastiveCenterLoss
+        self.lambda_c = [x / 10 for x in range(5, 21, 5)]  # For CrossEntropyLoss_ContrastiveCenterLoss
         self.optim_attributes = ["lambda_c"]
 
         for key, value in kwargs.items():
