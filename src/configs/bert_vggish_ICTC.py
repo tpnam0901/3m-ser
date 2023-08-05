@@ -12,11 +12,12 @@ class Config(BaseConfig):
 
     def add_args(self, **kwargs):
         self.batch_size = 1
-        self.num_epochs = 1000
+        self.num_epochs = 250
 
-        self.loss_type = "CrossEntropyLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss]
+        self.loss_type = "CrossEntropyLoss_ContrastiveCenterLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss]
+        self.feat_dim = 128
 
-        self.model_type = "MMSERA"  # # [MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module]
+        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER]
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
