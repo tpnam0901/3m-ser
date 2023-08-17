@@ -1,6 +1,11 @@
+import math
+
 import torch
+import torch.nn.functional as F
 from torch import nn
+from torch.autograd import Variable
 from torch.nn import CrossEntropyLoss as CELoss
+from torch.nn.functional import linear, normalize
 
 
 class CrossEntropyLoss(CELoss):
@@ -95,3 +100,100 @@ class CenterLossSER(CenterLoss):
         feat_fusion = feat[1]
         loss = super().forward(feat_fusion, label)
         return loss
+
+
+class CombinedMarginLoss(nn.Module):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        s,
+        m1,
+        m2,
+        m3,
+    ):
+        super(CombinedMarginLoss, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.s = s
+        self.m1 = m1
+        self.m2 = m2
+        self.m3 = m3
+
+        self.weight = torch.nn.Parameter(torch.normal(0, 0.01, (out_features, in_features)))
+
+        # For ArcFace
+        self.cos_m = math.cos(self.m2)
+        self.sin_m = math.sin(self.m2)
+        self.theta = math.cos(math.pi - self.m2)
+        self.sinmm = math.sin(math.pi - self.m2) * self.m2
+        self.easy_margin = False
+
+        # CrossEntropyLoss
+        self.ce_loss = CELoss()
+
+    def forward(self, embbedings, labels):
+        weight = self.weight
+        norm_embeddings = normalize(embbedings)
+        norm_weight_activated = normalize(weight)
+        logits = linear(norm_embeddings, norm_weight_activated)
+        logits = logits.clamp(-1, 1)
+
+        index_positive = torch.where(labels != -1)[0]
+        target_logit = logits[index_positive, labels[index_positive].view(-1)]
+
+        if self.m1 == 1.0 and self.m3 == 0.0:
+            with torch.no_grad():
+                target_logit.arccos_()
+                logits.arccos_()
+                final_target_logit = target_logit + self.m2
+                logits[index_positive, labels[index_positive].view(-1)] = final_target_logit
+                logits.cos_()
+            logits = logits * self.s
+
+        elif self.m3 > 0:
+            final_target_logit = target_logit - self.m3
+            logits[index_positive, labels[index_positive].view(-1)] = final_target_logit
+            logits = logits * self.s
+        else:
+            raise ValueError("Unsupported margin values.")
+
+        loss = self.ce_loss(logits, labels)
+        return loss, logits
+
+
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=0, alpha=None, size_average=True):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        if isinstance(alpha, (float, int)):
+            self.alpha = torch.Tensor([alpha, 1 - alpha])
+        if isinstance(alpha, list):
+            self.alpha = torch.Tensor(alpha)
+        self.size_average = size_average
+
+    def forward(self, input, target):
+        input = input[0]
+        if input.dim() > 2:
+            input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
+            input = input.transpose(1, 2)  # N,C,H*W => N,H*W,C
+            input = input.contiguous().view(-1, input.size(2))  # N,H*W,C => N*H*W,C
+        target = target.view(-1, 1)
+
+        logpt = F.log_softmax(input)
+        logpt = logpt.gather(1, target)
+        logpt = logpt.view(-1)
+        pt = Variable(logpt.data.exp())
+
+        if self.alpha is not None:
+            if self.alpha.type() != input.data.type():
+                self.alpha = self.alpha.type_as(input.data)
+            at = self.alpha.gather(0, target.data.view(-1))
+            logpt = logpt * Variable(at)
+
+        loss = -1 * (1 - pt) ** self.gamma * logpt
+        if self.size_average:
+            return loss.mean()
+        else:
+            return loss.sum()

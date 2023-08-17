@@ -17,7 +17,7 @@ from transformers import BertTokenizer, RobertaTokenizer
 from configs.base import Config
 from data.dataloader import build_train_test_dataset
 from models import losses, networks
-from trainer import Trainer
+from trainer import MarginTrainer as Trainer
 from utils.configs import get_options
 from utils.torch.callbacks import CheckpointsCallback
 
@@ -81,19 +81,15 @@ def main(opt: Config):
     )
 
     logging.info("Initializing trainer...")
-    if opt.loss_type == "FocalLoss":
-        criterion = losses.FocalLoss(gamma=opt.focal_loss_gamma, alpha=opt.focal_loss_alpha)
-        criterion.to(device)
-    else:
-        try:
-            criterion = getattr(losses, opt.loss_type)(
-                feat_dim=opt.feat_dim,
-                num_classes=opt.num_classes,
-                lambda_c=opt.lambda_c,
-            )
-            criterion.to(device)
-        except AttributeError:
-            raise NotImplementedError("Loss {} is not implemented".format(opt.loss_type))
+    criterion = losses.CombinedMarginLoss(
+        in_features=opt.feat_dim,
+        out_features=opt.num_classes,
+        s=opt.margin_loss_scale,
+        m1=opt.margin_loss_m1,
+        m2=opt.margin_loss_m2,
+        m3=opt.margin_loss_m2,
+    )
+    criterion.to(device)
 
     trainer = Trainer(
         network=network,

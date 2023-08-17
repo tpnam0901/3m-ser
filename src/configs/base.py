@@ -49,8 +49,11 @@ class Config(BaseConfig):
             setattr(self, key, value)
 
     def set_args(self, **kwargs):
-        self.num_epochs = 200
+        self.num_epochs = 250
         self.checkpoint_dir = "checkpoints"
+        self.save_all_states = True
+        self.save_best_val = True
+        self.max_to_keep = 1
         self.save_freq = 4000
         self.batch_size = 2
 
@@ -59,6 +62,16 @@ class Config(BaseConfig):
         )
         self.lambda_c = 1.0  # For CrossEntropyLoss_ContrastiveCenterLoss
         self.feat_dim = 2048  # For CrossEntropyLoss_ContrastiveCenterLoss
+
+        # For combined margin loss
+        self.margin_loss_m1 = 1.0
+        self.margin_loss_m2 = 0.5
+        self.margin_loss_m3 = 0.0
+        self.margin_loss_scale = 64.0
+
+        # For focal loss
+        self.focal_loss_gamma = 0.5
+        self.focal_loss_alpha = None
 
         # Learning rate
         self.learning_rate = 0.0001
