@@ -49,19 +49,29 @@ class Config(BaseConfig):
             setattr(self, key, value)
 
     def set_args(self, **kwargs):
+        # Training settings
         self.num_epochs = 250
         self.checkpoint_dir = "checkpoints"
         self.save_all_states = True
         self.save_best_val = True
         self.max_to_keep = 1
         self.save_freq = 4000
-        self.batch_size = 2
+        self.batch_size = 1
+
+        # Resume training
+        self.resume = False
+        # path to checkpoint.pt file, only available when using save_all_states = True in previous training
+        self.resume_path = None
+        if self.resume:
+            assert os.path.exists(self.resume_path), "Resume path not found"
 
         self.loss_type = (
             "CrossEntropyLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss]
         )
-        self.lambda_c = 1.0  # For CrossEntropyLoss_ContrastiveCenterLoss
-        self.feat_dim = 2048  # For CrossEntropyLoss_ContrastiveCenterLoss
+
+        # For CrossEntropyLoss_ContrastiveCenterLoss
+        self.lambda_c = 1.0
+        self.feat_dim = 2048
 
         # For combined margin loss
         self.margin_loss_m1 = 1.0

@@ -113,6 +113,8 @@ def main(opt: Config):
         save_all_states=opt.save_all_states,
     )
     trainer.compile(optimizer=optimizer, scheduler=lr_scheduler)
+    if opt.resume:
+        trainer.load_all_states(opt.resume_path)
     trainer.fit(train_ds, opt.num_epochs, test_ds, callbacks=[ckpt_callback])
 
 
