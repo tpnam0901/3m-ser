@@ -8,17 +8,18 @@ from .modules import build_audio_encoder, build_text_encoder
 class AudioOnly(nn.Module):
     def __init__(
         self,
-        num_classes=4,
-        num_attention_head=8,
-        dropout=0.5,
-        text_encoder_type="bert",
-        text_encoder_dim=768,
-        text_unfreeze=False,
-        audio_encoder_type="vggish",
-        audio_encoder_dim=128,
-        audio_unfreeze=True,
-        audio_norm_type="layer_norm",
-        device="cpu",
+        num_classes: int = 4,
+        num_attention_head: int = 8,
+        dropout: float = 0.5,
+        text_encoder_type: str = "bert",
+        text_encoder_dim: int = 768,
+        text_unfreeze: bool = False,
+        audio_encoder_type: str = "vggish",
+        audio_encoder_dim: int = 128,
+        audio_unfreeze: bool = True,
+        audio_norm_type: str = "layer_norm",
+        fusion_head_output_type: str = "cls",
+        device: str = "cpu",
     ):
         """
 
@@ -41,7 +42,7 @@ class AudioOnly(nn.Module):
         self.linear = nn.Linear(audio_encoder_dim, audio_encoder_dim)
         self.classifer = nn.Linear(audio_encoder_dim, num_classes)
 
-    def forward(self, input_ids, audio, output_attentions=False):
+    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
         # Audio processing
         audio_embeddings = self.audio_encoder(audio)
 
@@ -66,17 +67,18 @@ class AudioOnly(nn.Module):
 class TextOnly(nn.Module):
     def __init__(
         self,
-        num_classes=4,
-        num_attention_head=8,
-        dropout=0.5,
-        text_encoder_type="bert",
-        text_encoder_dim=768,
-        text_unfreeze=False,
-        audio_encoder_type="vggish",
-        audio_encoder_dim=128,
-        audio_unfreeze=True,
-        audio_norm_type="layer_norm",
-        device="cpu",
+        num_classes: int = 4,
+        num_attention_head: int = 8,
+        dropout: float = 0.5,
+        text_encoder_type: str = "bert",
+        text_encoder_dim: int = 768,
+        text_unfreeze: bool = False,
+        audio_encoder_type: str = "vggish",
+        audio_encoder_dim: int = 128,
+        audio_unfreeze: bool = True,
+        audio_norm_type: str = "layer_norm",
+        fusion_head_output_type: str = "cls",
+        device: str = "cpu",
     ):
         """
 
@@ -99,7 +101,7 @@ class TextOnly(nn.Module):
         self.linear = nn.Linear(audio_encoder_dim, audio_encoder_dim)
         self.classifer = nn.Linear(audio_encoder_dim, num_classes)
 
-    def forward(self, input_ids, audio, output_attentions=False):
+    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).pooler_output
         # Classification head
@@ -115,18 +117,18 @@ class TextOnly(nn.Module):
 class MMSERA(nn.Module):
     def __init__(
         self,
-        num_classes=4,
-        num_attention_head=8,
-        dropout=0.5,
-        text_encoder_type="bert",
-        text_encoder_dim=768,
-        text_unfreeze=False,
-        audio_encoder_type="vggish",
-        audio_encoder_dim=128,
-        audio_unfreeze=True,
-        audio_norm_type="layer_norm",
-        fusion_head_output_type="cls",
-        device="cpu",
+        num_classes: int = 4,
+        num_attention_head: int = 8,
+        dropout: float = 0.5,
+        text_encoder_type: str = "bert",
+        text_encoder_dim: int = 768,
+        text_unfreeze: bool = False,
+        audio_encoder_type: str = "vggish",
+        audio_encoder_dim: int = 128,
+        audio_unfreeze: bool = True,
+        audio_norm_type: str = "layer_norm",
+        fusion_head_output_type: str = "cls",
+        device: str = "cpu",
     ):
         """
 
@@ -174,7 +176,7 @@ class MMSERA(nn.Module):
 
         self.fusion_head_output_type = fusion_head_output_type
 
-    def forward(self, input_ids, audio, output_attentions=False):
+    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).last_hidden_state
 
@@ -229,18 +231,18 @@ class MMSERA(nn.Module):
 class SERVER(nn.Module):
     def __init__(
         self,
-        num_classes=4,
-        num_attention_head=8,
-        dropout=0.5,
-        text_encoder_type="bert",
-        text_encoder_dim=768,
-        text_unfreeze=False,
-        audio_encoder_type="vggish",
-        audio_encoder_dim=128,
-        audio_unfreeze=True,
-        audio_norm_type="layer_norm",
-        fusion_head_output_type="cls",
-        device="cpu",
+        num_classes: int = 4,
+        num_attention_head: int = 8,
+        dropout: float = 0.5,
+        text_encoder_type: str = "bert",
+        text_encoder_dim: int = 768,
+        text_unfreeze: bool = False,
+        audio_encoder_type: str = "vggish",
+        audio_encoder_dim: int = 128,
+        audio_unfreeze: bool = True,
+        audio_norm_type: str = "layer_norm",
+        fusion_head_output_type: str = "cls",
+        device: str = "cpu",
     ):
         """
 
@@ -271,7 +273,7 @@ class SERVER(nn.Module):
         self.linear2 = nn.Linear(256, 64)
         self.classifer = nn.Linear(64, num_classes)
 
-    def forward(self, input_ids, audio, output_attentions=False):
+    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).pooler_output
         text_embeddings = self.linear1(text_embeddings)

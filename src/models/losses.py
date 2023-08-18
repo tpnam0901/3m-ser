@@ -9,23 +9,23 @@ from torch.nn.functional import linear, normalize
 
 
 class CrossEntropyLoss(CELoss):
-    def __init__(self, feat_dim, num_classes, lambda_c=1.0, **kwargs):
+    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0, **kwargs):
         super(CrossEntropyLoss, self).__init__(**kwargs)
 
-    def forward(self, input, target):
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         out = input[0]
         return super().forward(out, target)
 
 
 class CenterLoss(nn.Module):
-    def __init__(self, feat_dim, num_classes, lambda_c=1.0):
+    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0):
         super(CenterLoss, self).__init__()
         self.feat_dim = feat_dim
         self.num_classes = num_classes
         self.lambda_c = lambda_c
         self.centers = nn.Parameter(torch.randn(num_classes, feat_dim))
 
-    def forward(self, feat, label):
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         batch_size = feat.size()[0]
         expanded_centers = self.centers.index_select(dim=0, index=label)
         intra_distances = feat.dist(expanded_centers)
@@ -34,7 +34,7 @@ class CenterLoss(nn.Module):
 
 
 class ContrastiveCenterLoss(nn.Module):
-    def __init__(self, feat_dim, num_classes, lambda_c=1.0):
+    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0):
         super(ContrastiveCenterLoss, self).__init__()
         self.feat_dim = feat_dim
         self.num_classes = num_classes
@@ -42,7 +42,7 @@ class ContrastiveCenterLoss(nn.Module):
         self.centers = nn.Parameter(torch.randn(num_classes, feat_dim))
 
     # may not work due to flowing gradient. change center calculation to exp moving avg may work.
-    def forward(self, feat, label):
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         batch_size = feat.size()[0]
         expanded_centers = self.centers.expand(batch_size, -1, -1)
         expanded_feat = feat.expand(self.num_classes, -1, -1).transpose(1, 0)
@@ -57,12 +57,12 @@ class ContrastiveCenterLoss(nn.Module):
 
 
 class CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
-    def __init__(self, feat_dim, num_classes, lambda_c=1.0):
+    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0):
         super(CrossEntropyLoss_ContrastiveCenterLoss, self).__init__()
         self.cc_loss = ContrastiveCenterLoss(feat_dim, num_classes, lambda_c)
         self.ce_loss = CELoss()
 
-    def forward(self, feat, label):
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         logits = feat[0]
         feat_fusion = feat[1]
 
@@ -73,12 +73,12 @@ class CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
 
 
 class CrossEntropyLoss_CenterLoss(nn.Module):
-    def __init__(self, feat_dim, num_classes, lambda_c=1.0):
+    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0):
         super(CrossEntropyLoss_CenterLoss, self).__init__()
         self.c_loss = CenterLoss(feat_dim, num_classes, lambda_c)
         self.ce_loss = CELoss()
 
-    def forward(self, feat, label):
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         logits = feat[0]
         feat_fusion = feat[1]
 
@@ -89,14 +89,14 @@ class CrossEntropyLoss_CenterLoss(nn.Module):
 
 
 class ContrastiveCenterLossSER(ContrastiveCenterLoss):
-    def forward(self, feat, label):
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         feat_fusion = feat[1]
         loss = super().forward(feat_fusion, label)
         return loss
 
 
 class CenterLossSER(CenterLoss):
-    def forward(self, feat, label):
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         feat_fusion = feat[1]
         loss = super().forward(feat_fusion, label)
         return loss
@@ -105,12 +105,12 @@ class CenterLossSER(CenterLoss):
 class CombinedMarginLoss(nn.Module):
     def __init__(
         self,
-        in_features,
-        out_features,
-        s,
-        m1,
-        m2,
-        m3,
+        in_features: int,
+        out_features: int,
+        s: float,
+        m1: float,
+        m2: float,
+        m3: float,
     ):
         super(CombinedMarginLoss, self).__init__()
         self.in_features = in_features
@@ -132,7 +132,7 @@ class CombinedMarginLoss(nn.Module):
         # CrossEntropyLoss
         self.ce_loss = CELoss()
 
-    def forward(self, embbedings, labels):
+    def forward(self, embbedings: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         weight = self.weight
         norm_embeddings = normalize(embbedings)
         norm_weight_activated = normalize(weight)
@@ -163,7 +163,7 @@ class CombinedMarginLoss(nn.Module):
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=0, alpha=None, size_average=True):
+    def __init__(self, gamma: float = 0.0, alpha: float = None, size_average: bool = True):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.alpha = alpha
@@ -173,7 +173,7 @@ class FocalLoss(nn.Module):
             self.alpha = torch.Tensor(alpha)
         self.size_average = size_average
 
-    def forward(self, input, target):
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input[0]
         if input.dim() > 2:
             input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
