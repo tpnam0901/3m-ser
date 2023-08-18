@@ -9,6 +9,8 @@ from torch.nn.functional import linear, normalize
 
 
 class CrossEntropyLoss(CELoss):
+    """Rewrite CrossEntropyLoss to support init with kwargs"""
+
     def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0, **kwargs):
         super(CrossEntropyLoss, self).__init__(**kwargs)
 
@@ -112,6 +114,16 @@ class CombinedMarginLoss(nn.Module):
         m2: float,
         m3: float,
     ):
+        """Combined margin loss for SphereFace, CosFace, ArcFace
+
+        Args:
+            in_features (int): the size of feature vector
+            out_features (int): the number of classes
+            s (float): scale factor
+            m1 (float): margin for SphereFace
+            m2 (float): margin for ArcFace, m1 must be 1.0
+            m3 (float): margin for CosFace, m1 must be 1.0
+        """
         super(CombinedMarginLoss, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
