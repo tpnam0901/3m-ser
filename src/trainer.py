@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Dict, Union
 
@@ -135,3 +136,34 @@ class MarginTrainer(TorchTrainer):
         if self.scheduler is not None:
             self.scheduler.step()
         self.scheduler_criterion.step()
+
+    def save_all_states(self, path: str, global_epoch: int, global_step: int):
+        checkpoint = {
+            "epoch": global_epoch,
+            "global_step": global_step,
+            "state_dict_network": self.network.state_dict(),
+            "state_optimizer": self.optimizer.state_dict(),
+            "state_criterion": self.criterion.state_dict(),
+            "state_lr_scheduler_criterion": self.scheduler_criterion.state_dict(),
+        }
+        if self.scheduler is not None:
+            checkpoint["state_lr_scheduler"] = self.scheduler.state_dict()
+
+        ckpt_path = os.path.join(path, "checkpoint_{}_{}.pt".format(global_epoch, global_step))
+        torch.save(checkpoint, ckpt_path)
+        return ckpt_path
+
+    def load_all_states(self, path: str, device: str = "cpu"):
+        dict_checkpoint = torch.load(os.path.join(path), map_location=device)
+
+        self.start_epoch = dict_checkpoint["epoch"]
+        self.global_step = dict_checkpoint["global_step"]
+        self.network.load_state_dict(dict_checkpoint["state_dict_backbone"])
+        self.optimizer.load_state_dict(dict_checkpoint["state_optimizer"])
+        self.criterion.load_state_dict(dict_checkpoint["state_criterion"])
+        self.scheduler_criterion.load_state_dict(dict_checkpoint["state_lr_scheduler_criterion"])
+        if self.scheduler is not None:
+            self.scheduler.load_state_dict(dict_checkpoint["state_lr_scheduler"])
+
+        logging.info("Successfully loaded checkpoint from {}".format(path))
+        logging.info("Resume training from epoch {}".format(self.start_epoch))
