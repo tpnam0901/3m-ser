@@ -38,6 +38,29 @@ class BaseConfig(Base):
 
         logging.info(message)
 
+    def load(self, opt_path):
+        with open(opt_path, "r") as f:
+            data = f.read().split("\n")
+            # remove all empty strings
+            data = list(filter(None, data))
+            # convert to dict
+            data_dict = {}
+            for i in range(len(data)):
+                key, value = data[i].split(":")[0].strip(), data[i].split(":")[1].strip()
+                if "." in value and value.replace(".", "").isdigit():
+                    value = float(value)
+                elif value.isdigit():
+                    value = int(value)
+                elif value == "True":
+                    value = True
+                elif value == "False":
+                    value = False
+                elif value == "None":
+                    value = None
+                data_dict[key] = value
+        for key, value in data_dict.items():
+            setattr(self, key, value)
+
 
 class Config(BaseConfig):
     # Base
@@ -65,9 +88,9 @@ class Config(BaseConfig):
         if self.resume:
             assert os.path.exists(self.resume_path), "Resume path not found"
 
-        self.loss_type = (
-            "CrossEntropyLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss]
-        )
+        # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
+        #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
+        self.loss_type = "CrossEntropyLoss"
 
         # For CrossEntropyLoss_ContrastiveCenterLoss
         self.lambda_c = 1.0
@@ -89,7 +112,8 @@ class Config(BaseConfig):
         self.learning_rate_gamma = 0.1
 
         # Dataset
-        self.data_root = "data/IEMOCAP"
+        self.data_root = "data/IEMOCAP"  # folder contains train.pkl and test.pkl
+        # use for training with batch size > 1
         self.text_max_length = 297
         self.audio_max_length = 546220
 
@@ -108,7 +132,11 @@ class Config(BaseConfig):
 
         self.fusion_head_output_type = "cls"  # [cls, mean, max]
 
-        self.optim_attributes = None  # For hyperparameter search
+        # For hyperparameter search
+        self.optim_attributes = None
+        # Example of hyperparameter search for lambda_c.
+        # self.lambda_c = [x / 10 for x in range(5, 21, 5)]
+        # self.optim_attributes = ["lambda_c"]
 
         for key, value in kwargs.items():
             setattr(self, key, value)
