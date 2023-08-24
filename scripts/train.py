@@ -126,5 +126,12 @@ def arg_parser():
 
 if __name__ == "__main__":
     args = arg_parser()
-    opt = get_options(args.config)
+    opt: Config = get_options(args.config)
+    if opt.resume and opt.opt_path is not None:
+        resume = opt.resume
+        resume_path = opt.resume_path
+        opt.load(opt.opt_path)
+        opt.resume = resume
+        opt.resume_path = resume_path
+
     main(opt)

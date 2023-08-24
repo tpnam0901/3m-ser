@@ -215,7 +215,7 @@ class TorchTrainer(ABC, nn.Module):
         checkpoint = {
             "epoch": global_epoch,
             "global_step": global_step,
-            "state_dict_backbone": self.network.state_dict(),
+            "state_dict_network": self.network.state_dict(),
             "state_optimizer": self.optimizer.state_dict(),
         }
         if self.scheduler is not None:
@@ -230,7 +230,7 @@ class TorchTrainer(ABC, nn.Module):
 
         self.start_epoch = dict_checkpoint["epoch"]
         self.global_step = dict_checkpoint["global_step"]
-        self.network.load_state_dict(dict_checkpoint["state_dict_backbone"])
+        self.network.load_state_dict(dict_checkpoint["state_dict_network"])
         self.optimizer.load_state_dict(dict_checkpoint["state_optimizer"])
         if self.scheduler is not None:
             self.scheduler.load_state_dict(dict_checkpoint["state_lr_scheduler"])

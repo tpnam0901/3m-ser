@@ -109,6 +109,8 @@ def main(opt: Config):
         save_all_states=opt.save_all_states,
     )
     trainer.compile(optimizer=optimizer, scheduler=lr_scheduler)
+    if opt.resume:
+        trainer.load_all_states(opt.resume_path)
     trainer.fit(train_ds, opt.num_epochs, test_ds, callbacks=[ckpt_callback])
 
 
@@ -121,4 +123,11 @@ def arg_parser():
 if __name__ == "__main__":
     args = arg_parser()
     opt = get_options(args.config)
+    if opt.resume and opt.opt_path is not None:
+        resume = opt.resume
+        resume_path = opt.resume_path
+        opt.load(opt.opt_path)
+        opt.resume = resume
+        opt.resume_path = resume_path
+
     main(opt)

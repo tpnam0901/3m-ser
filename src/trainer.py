@@ -158,7 +158,7 @@ class MarginTrainer(TorchTrainer):
 
         self.start_epoch = dict_checkpoint["epoch"]
         self.global_step = dict_checkpoint["global_step"]
-        self.network.load_state_dict(dict_checkpoint["state_dict_backbone"])
+        self.network.load_state_dict(dict_checkpoint["state_dict_network"])
         self.optimizer.load_state_dict(dict_checkpoint["state_optimizer"])
         self.criterion.load_state_dict(dict_checkpoint["state_criterion"])
         self.scheduler_criterion.load_state_dict(dict_checkpoint["state_lr_scheduler_criterion"])
