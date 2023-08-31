@@ -140,5 +140,9 @@ class Config(BaseConfig):
         # self.lambda_c = [x / 10 for x in range(5, 21, 5)]
         # self.optim_attributes = ["lambda_c"]
 
+        # Search for linear layer output dimension
+        self.linear_layer_output: List = [256, 128]
+        self.linear_layer_last_dim: int = 64
+
         for key, value in kwargs.items():
             setattr(self, key, value)
