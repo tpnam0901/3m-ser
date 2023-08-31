@@ -86,6 +86,7 @@ class Config(BaseConfig):
         self.resume: bool = False
         # path to checkpoint.pt file, only available when using save_all_states = True in previous training
         self.resume_path: str = None
+        self.opt_path: str = None
         if self.resume:
             assert os.path.exists(self.resume_path), "Resume path not found"
 
