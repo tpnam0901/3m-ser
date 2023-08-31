@@ -21,12 +21,20 @@ class AudioOnly(nn.Module):
         fusion_head_output_type: str = "cls",
         device: str = "cpu",
     ):
-        """
+        """Speech Emotion Recognition with Audio Only
 
-        Args: MMSERA model extends from MMSER model in the paper
+        Args:
             num_classes (int, optional): The number of classes. Defaults to 4.
             num_attention_head (int, optional): The number of self-attention heads. Defaults to 8.
-            dropout (float, optional): Whether to use dropout. Defaults to 0.5.
+            dropout (float, optional):  Whether to use dropout. Defaults to 0.5.
+            text_encoder_type (str, optional):  The type of text encoder. Defaults to "bert".
+            text_encoder_dim (int, optional):  The dimension of the text encoder. Defaults to 768.
+            text_unfreeze (bool, optional):  Whether to unfreeze the text encoder. Defaults to False.
+            audio_encoder_type (str, optional):  The type of audio encoder. Defaults to "vggish".
+            audio_encoder_dim (int, optional):  The dimension of the audio encoder. Defaults to 128.
+            audio_unfreeze (bool, optional): Whether to unfreeze the audio encoder. Defaults to True.
+            audio_norm_type (str, optional):  The type of audio normalization. Defaults to "layer_norm".
+            fusion_head_output_type (str, optional): The type of fusion head output. Defaults to "cls".
             device (str, optional): The device to use. Defaults to "cpu".
         """
         super(AudioOnly, self).__init__()
@@ -41,6 +49,7 @@ class AudioOnly(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(audio_encoder_dim, audio_encoder_dim)
         self.classifer = nn.Linear(audio_encoder_dim, num_classes)
+        self.fusion_head_output_type = fusion_head_output_type
 
     def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
         # Audio processing
@@ -51,16 +60,26 @@ class AudioOnly(nn.Module):
             audio_embeddings = audio_embeddings.unsqueeze(0)
 
         # Expand the audio embeddings to match the text embeddings
-        audio_embeddings = audio_embeddings.unsqueeze(0)
-        # Flatten the audio embeddings
-        audio_embeddings = audio_embeddings.view(audio_embeddings.size(0), -1)
+        if len(audio_embeddings.size()) == 2:
+            audio_embeddings = audio_embeddings.unsqueeze(0)
+
+        # Get classification output
+        if self.fusion_head_output_type == "cls":
+            audio_embeddings = audio_embeddings[:, 0, :]
+        elif self.fusion_head_output_type == "mean":
+            audio_embeddings = audio_embeddings.mean(dim=1)
+        elif self.fusion_head_output_type == "max":
+            audio_embeddings = audio_embeddings.max(dim=1)
+        else:
+            raise ValueError("Invalid fusion head output type")
+
         # Classification head
         x = self.dropout(audio_embeddings)
         x = self.linear(x)
         x = nn.functional.leaky_relu(x)
         out = self.classifer(x)
 
-        return out
+        return out, audio_embeddings, None, None
 
 
 # Create audio only model
@@ -80,15 +99,23 @@ class TextOnly(nn.Module):
         fusion_head_output_type: str = "cls",
         device: str = "cpu",
     ):
-        """
+        """Speech Emotion Recognition with Text Only
 
-        Args: MMSERA model extends from MMSER model in the paper
+        Args:
             num_classes (int, optional): The number of classes. Defaults to 4.
             num_attention_head (int, optional): The number of self-attention heads. Defaults to 8.
-            dropout (float, optional): Whether to use dropout. Defaults to 0.5.
+            dropout (float, optional):  Whether to use dropout. Defaults to 0.5.
+            text_encoder_type (str, optional):  The type of text encoder. Defaults to "bert".
+            text_encoder_dim (int, optional):  The dimension of the text encoder. Defaults to 768.
+            text_unfreeze (bool, optional):  Whether to unfreeze the text encoder. Defaults to False.
+            audio_encoder_type (str, optional):  The type of audio encoder. Defaults to "vggish".
+            audio_encoder_dim (int, optional):  The dimension of the audio encoder. Defaults to 128.
+            audio_unfreeze (bool, optional): Whether to unfreeze the audio encoder. Defaults to True.
+            audio_norm_type (str, optional):  The type of audio normalization. Defaults to "layer_norm".
+            fusion_head_output_type (str, optional): The type of fusion head output. Defaults to "cls".
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(AudioOnly, self).__init__()
+        super(TextOnly, self).__init__()
 
         # Text module
         self.text_encoder = build_text_encoder(text_encoder_type)
@@ -98,8 +125,8 @@ class TextOnly(nn.Module):
             param.requires_grad = text_unfreeze
 
         self.dropout = nn.Dropout(dropout)
-        self.linear = nn.Linear(audio_encoder_dim, audio_encoder_dim)
-        self.classifer = nn.Linear(audio_encoder_dim, num_classes)
+        self.linear = nn.Linear(text_encoder_dim, text_encoder_dim)
+        self.classifer = nn.Linear(text_encoder_dim, num_classes)
 
     def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
         # Text processing
@@ -110,7 +137,7 @@ class TextOnly(nn.Module):
         x = nn.functional.leaky_relu(x)
         out = self.classifer(x)
 
-        return out
+        return out, text_embeddings, None, None
 
 
 # Create Multi-modal model - layer norm
