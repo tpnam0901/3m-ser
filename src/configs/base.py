@@ -40,6 +40,22 @@ class BaseConfig(Base):
         logging.info(message)
 
     def load(self, opt_path: str):
+        def decode_value(value: str):
+            value = value.strip()
+            if "." in value and value.replace(".", "").isdigit():
+                value = float(value)
+            elif value.isdigit():
+                value = int(value)
+            elif value == "True":
+                value = True
+            elif value == "False":
+                value = False
+            elif value == "None":
+                value = None
+            elif value.startswith("'") and value.endswith("'") or value.startswith('"') and value.endswith('"'):
+                value = value[1:-1]
+            return value
+
         with open(opt_path, "r") as f:
             data = f.read().split("\n")
             # remove all empty strings
@@ -48,16 +64,12 @@ class BaseConfig(Base):
             data_dict = {}
             for i in range(len(data)):
                 key, value = data[i].split(":")[0].strip(), data[i].split(":")[1].strip()
-                if "." in value and value.replace(".", "").isdigit():
-                    value = float(value)
-                elif value.isdigit():
-                    value = int(value)
-                elif value == "True":
-                    value = True
-                elif value == "False":
-                    value = False
-                elif value == "None":
-                    value = None
+                if value.startswith("[") and value.endswith("]"):
+                    value = value[1:-1].split(",")
+                    value = [decode_value(x) for x in value]
+                else:
+                    value = decode_value(value)
+
                 data_dict[key] = value
         for key, value in data_dict.items():
             setattr(self, key, value)
