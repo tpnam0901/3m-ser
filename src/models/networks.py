@@ -84,6 +84,62 @@ class AudioOnly(nn.Module):
         return out, audio_embeddings, None, None
 
 
+class AudioOnly_v2(nn.Module):
+    def __init__(
+        self,
+        opt: Config,
+        device: str = "cpu",
+    ):
+        """Speech Emotion Recognition with Audio Only
+
+        Args:
+            opt (Config): Config object
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(AudioOnly_v2, self).__init__()
+
+        # Audio module
+        self.audio_encoder = build_audio_encoder(opt.audio_encoder_type)
+        self.audio_encoder.to(device)
+        # Freeze/Unfreeze the audio module
+        for param in self.audio_encoder.parameters():
+            param.requires_grad = opt.audio_unfreeze
+
+        self.dropout = nn.Dropout(opt.dropout)
+        self.linear = nn.Linear(opt.audio_encoder_dim, opt.linear_layer_last_dim)
+        self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
+        self.fusion_head_output_type = opt.fusion_head_output_type
+
+    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+        # Audio processing
+        audio_embeddings = self.audio_encoder(audio)
+
+        # Check if vggish outputs is (128) or (num_samples, 128)
+        if len(audio_embeddings.size()) == 1:
+            audio_embeddings = audio_embeddings.unsqueeze(0)
+
+        # Expand the audio embeddings to match the text embeddings
+        if len(audio_embeddings.size()) == 2:
+            audio_embeddings = audio_embeddings.unsqueeze(0)
+
+        # Get classification output
+        if self.fusion_head_output_type == "cls":
+            audio_embeddings = audio_embeddings[:, 0, :]
+        elif self.fusion_head_output_type == "mean":
+            audio_embeddings = audio_embeddings.mean(dim=1)
+        elif self.fusion_head_output_type == "max":
+            audio_embeddings = audio_embeddings.max(dim=1)
+        else:
+            raise ValueError("Invalid fusion head output type")
+
+        # Classification head
+        x = self.linear(audio_embeddings)
+        x = self.dropout(x)
+        out = self.classifer(x)
+
+        return out, audio_embeddings, None, None
+
+
 # Create audio only model
 class TextOnly(nn.Module):
     def __init__(
@@ -137,6 +193,43 @@ class TextOnly(nn.Module):
         x = self.dropout(text_embeddings)
         x = self.linear(x)
         x = nn.functional.leaky_relu(x)
+        out = self.classifer(x)
+
+        return out, text_embeddings, None, None
+
+
+# Create audio only model
+class TextOnly_v2(nn.Module):
+    def __init__(
+        self,
+        opt: Config,
+        device: str = "cpu",
+    ):
+        """Speech Emotion Recognition with Text Only
+
+        Args:
+            opt (Config): Config object
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(TextOnly_v2, self).__init__()
+
+        # Text module
+        self.text_encoder = build_text_encoder(opt.text_encoder_type)
+        self.text_encoder.to(device)
+        # Freeze/Unfreeze the text module
+        for param in self.text_encoder.parameters():
+            param.requires_grad = opt.text_unfreeze
+
+        self.dropout = nn.Dropout(opt.dropout)
+        self.linear = nn.Linear(opt.text_encoder_dim, opt.linear_layer_last_dim)
+        self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
+
+    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+        # Text processing
+        text_embeddings = self.text_encoder(input_ids).pooler_output
+        # Classification head
+        x = self.linear(text_embeddings)
+        x = self.dropout(x)
         out = self.classifer(x)
 
         return out, text_embeddings, None, None
@@ -299,14 +392,14 @@ class MMSERA_v2(nn.Module):
         self.dropout = nn.Dropout(opt.dropout)
 
         self.linear_layer_output = opt.linear_layer_output
-        previous_dim = opt.audio_encoder_dim
-        if len(opt.linear_layer_output) > 1:
-            for linear_layer in opt.linear_layer_output[:-1]:
-                setattr(self, f"linear_{linear_layer}", nn.Linear(previous_dim, linear_layer))
-                previous_dim = linear_layer
-        setattr(self, f"linear_{opt.linear_layer_output[-1]}", nn.Linear(previous_dim, opt.linear_layer_last_dim))
 
-        self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
+        previous_dim = opt.audio_encoder_dim
+        if len(opt.linear_layer_output) > 0:
+            for i, linear_layer in enumerate(opt.linear_layer_output):
+                setattr(self, f"linear_{i}", nn.Linear(previous_dim, linear_layer))
+                previous_dim = linear_layer
+
+        self.classifer = nn.Linear(previous_dim, opt.num_classes)
 
         self.fusion_head_output_type = opt.fusion_head_output_type
 
@@ -351,10 +444,10 @@ class MMSERA_v2(nn.Module):
             raise ValueError("Invalid fusion head output type")
 
         # Classification head
-        x = self.dropout(cls_token_final_fusion_norm)
-        for linear_layer in self.linear_layer_output:
-            x = getattr(self, f"linear_{linear_layer}")(x)
-            x = nn.functional.leaky_relu(x)
+        x = cls_token_final_fusion_norm
+        for i, _ in enumerate(self.linear_layer_output):
+            x = getattr(self, f"linear_{i}")(x)
+        x = self.dropout(x)
         out = self.classifer(x)
 
         if output_attentions:
