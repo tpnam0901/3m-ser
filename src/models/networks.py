@@ -106,8 +106,8 @@ class AudioOnly_v2(nn.Module):
             param.requires_grad = opt.audio_unfreeze
 
         self.dropout = nn.Dropout(opt.dropout)
-        self.linear = nn.Linear(opt.audio_encoder_dim, opt.linear_layer_last_dim)
-        self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
+        self.linear = nn.Linear(opt.audio_encoder_dim, opt.audio_encoder_dim)
+        self.classifer = nn.Linear(opt.audio_encoder_dim, opt.num_classes)
         self.fusion_head_output_type = opt.fusion_head_output_type
 
     def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
