@@ -445,9 +445,10 @@ class MMSERA_v2(nn.Module):
 
         # Classification head
         x = cls_token_final_fusion_norm
+        x = self.dropout(x)
         for i, _ in enumerate(self.linear_layer_output):
             x = getattr(self, f"linear_{i}")(x)
-        x = self.dropout(x)
+            x = nn.functional.leaky_relu(x)
         out = self.classifer(x)
 
         if output_attentions:
@@ -500,6 +501,61 @@ class SERVER(nn.Module):
         self.linear1 = nn.Linear(text_encoder_dim, 128)
         self.linear2 = nn.Linear(256, 64)
         self.classifer = nn.Linear(64, num_classes)
+
+    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+        # Text processing
+        text_embeddings = self.text_encoder(input_ids).pooler_output
+        text_embeddings = self.linear1(text_embeddings)
+        # Audio processing
+        audio_embeddings = self.audio_encoder(audio)
+        # Get classification token from the audio module
+        audio_embeddings = audio_embeddings.sum(dim=1)
+
+        # Concatenate the text and audio embeddings
+        fusion_embeddings = torch.cat((text_embeddings, audio_embeddings), 1)
+
+        # Classification head
+        x = self.dropout(fusion_embeddings)
+        x = self.linear2(x)
+        out = self.classifer(x)
+
+        return out, fusion_embeddings, text_embeddings, audio_embeddings
+
+
+class SERVER_v2(nn.Module):
+    def __init__(
+        self,
+        opt: Config,
+        device: str = "cpu",
+    ):
+        """
+
+        Args: MMSERA model extends from MMSER model in the paper
+            num_classes (int, optional): The number of classes. Defaults to 4.
+            num_attention_head (int, optional): The number of self-attention heads. Defaults to 8.
+            dropout (float, optional): Whether to use dropout. Defaults to 0.5.
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(SERVER_v2, self).__init__()
+        # Text module
+        self.text_encoder = build_text_encoder(opt.text_encoder_type)
+        self.text_encoder.to(device)
+        # Freeze/Unfreeze the text module
+        for param in self.text_encoder.parameters():
+            param.requires_grad = opt.text_unfreeze
+
+        # Audio module
+        self.audio_encoder = build_audio_encoder(opt.audio_encoder_type)
+        self.audio_encoder.to(device)
+
+        # Freeze/Unfreeze the audio module
+        for param in self.audio_encoder.parameters():
+            param.requires_grad = opt.audio_unfreeze
+
+        self.dropout = nn.Dropout(opt.dropout)
+        self.linear1 = nn.Linear(opt.text_encoder_dim, 128)
+        self.linear2 = nn.Linear(256, 64)
+        self.classifer = nn.Linear(64, opt.num_classes)
 
     def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
         # Text processing

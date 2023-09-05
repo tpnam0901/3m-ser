@@ -38,6 +38,8 @@ class VGGish(nn.Module):
         for i in range(x.size(0)):
             out.append(self.vggish(x[i]))
         x = torch.stack(out, axis=0)
+        if len(x.size()) == 2:
+            x = x.unsqueeze(1)
         return x
 
 
