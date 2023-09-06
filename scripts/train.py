@@ -106,7 +106,11 @@ def main(opt: Config):
     logging.info("Start training...")
     # Build optimizer and criterion
     optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
-    lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma)
+    lr_scheduler = None
+    if opt.learning_rate_step_size is not None:
+        lr_scheduler = optim.lr_scheduler.StepLR(
+            optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma
+        )
 
     ckpt_callback = CheckpointsCallback(
         checkpoint_dir=weight_dir,
