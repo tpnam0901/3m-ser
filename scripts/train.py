@@ -54,13 +54,6 @@ def main(opt: Config):
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
 
     logging.info("Initializing checkpoint directory and dataset...")
-    if opt.text_encoder_type == "bert":
-        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-    elif opt.text_encoder_type == "roberta":
-        tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
-    else:
-        raise NotImplementedError("Tokenizer {} is not implemented".format(opt.text_encoder_type))
-
     # Preapre the checkpoint directory
     opt.checkpoint_dir = checkpoint_dir = os.path.join(
         os.path.abspath(opt.checkpoint_dir),
@@ -74,14 +67,7 @@ def main(opt: Config):
     opt.save(opt)
 
     # Build dataset
-    train_ds, test_ds = build_train_test_dataset(
-        opt.data_root,
-        opt.batch_size,
-        tokenizer,
-        opt.audio_max_length,
-        text_max_length=opt.text_max_length,
-        audio_encoder_type=opt.audio_encoder_type,
-    )
+    train_ds, test_ds = build_train_test_dataset(opt)
 
     logging.info("Initializing trainer...")
     if opt.loss_type == "FocalLoss":

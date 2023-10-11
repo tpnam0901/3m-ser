@@ -108,7 +108,7 @@ class Config(BaseConfig):
 
         # For CrossEntropyLoss_ContrastiveCenterLoss
         self.lambda_c: float = 1.0
-        self.feat_dim: int = 2048
+        self.feat_dim: int = 768
 
         # For combined margin loss
         self.margin_loss_m1: float = 1.0
@@ -126,6 +126,7 @@ class Config(BaseConfig):
         self.learning_rate_gamma: float = 0.1
 
         # Dataset
+        self.data_name: str = "IEMOCAP"  # [IEMOCAP, ESD, MELD]
         self.data_root: str = "data/IEMOCAP"  # folder contains train.pkl and test.pkl
         # use for training with batch size > 1
         self.text_max_length: int = 297

@@ -12,3 +12,4 @@ transformers==4.29.2
 torchlibrosa==0.1.0
 h5py==3.9.0
 torchsummary==1.5.1
+moviepy

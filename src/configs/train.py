@@ -13,13 +13,15 @@ class Config(BaseConfig):
         self.batch_size = 1
         self.num_epochs = 250
 
-        self.loss_type = "CrossEntropyLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss]
+        # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
+        #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
+        self.loss_type = "CrossEntropyLoss"
 
-        self.checkpoint_dir = "checkpoints/3M-SER_v2"
+        self.checkpoint_dir = "checkpoints/3M-SER_v2_MELD"
 
         # For contrastive-center loss
         self.lambda_c = 1.0
-        self.feat_dim = 128
+        self.feat_dim = 768
 
         # For combined margin loss
         self.margin_loss_m1 = 1.0
@@ -31,7 +33,7 @@ class Config(BaseConfig):
         self.focal_loss_gamma = 0.5
         self.focal_loss_alpha = None
 
-        self.model_type = "MMSERA_v2"  # [MMSERA, AudioOnly, TextOnly, SERVER, *_v2]
+        self.model_type = "SERVER_v2"  # [MMSERA, AudioOnly, TextOnly, SERVER, *_v2]
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
@@ -43,8 +45,16 @@ class Config(BaseConfig):
         self.fusion_head_output_type = "cls"  # [cls, mean, max]
         self.linear_layer_output = [64]
 
+        # Dataset
+        self.data_name: str = "MELD"  # [IEMOCAP, ESD, MELD]
+        self.data_root: str = "data/MELD_preprocessed"  # folder contains train.pkl and test.pkl
+        # use for training with batch size > 1
+        self.text_max_length: int = 297
+        self.audio_max_length: int = 546220
+
         # Config name
-        self.name = f"3m-ser_{self.text_encoder_type}_{self.audio_encoder_type}_{self.fusion_head_output_type}"
+        # self.name = f"{self.loss_type}_{self.fusion_head_output_type}"
+        self.name = f"{self.fusion_head_output_type}_{self.text_encoder_type}_{self.audio_encoder_type}"
 
         for key, value in kwargs.items():
             setattr(self, key, value)
