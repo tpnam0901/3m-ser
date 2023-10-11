@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 from torch import hub
 
-VGGISH_WEIGHTS = "https://github.com/harritaylor/torchvggish/" \
-                 "releases/download/v0.1/vggish-10086976.pth"
-PCA_PARAMS = "https://github.com/harritaylor/torchvggish/" \
-             "releases/download/v0.1/vggish_pca_params-970ea276.pth"
+VGGISH_WEIGHTS = "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/torchvggish/vggish-10086976.pth"
+PCA_PARAMS = (
+    "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/torchvggish/vggish_pca_params-970ea276.pth"
+)
 
 
 class VGG(nn.Module):
@@ -69,13 +69,9 @@ class Postprocessor(object):
           A tensor of the same shape as the input, containing the PCA-transformed,
           quantized, and clipped version of the input.
         """
-        pca_applied = torch.mm(
-            self._pca_matrix, (embeddings_batch.t() - self._pca_means)
-        ).t()
+        pca_applied = torch.mm(self._pca_matrix, (embeddings_batch.t() - self._pca_means)).t()
         clipped_embeddings = torch.clamp(pca_applied, -2.0, +2.0)
-        quantized_embeddings = torch.round(
-            (clipped_embeddings - -2.0) * (255.0 / (+2.0 - -2.0))
-        )
+        quantized_embeddings = torch.round((clipped_embeddings - -2.0) * (255.0 / (+2.0 - -2.0)))
         return torch.squeeze(quantized_embeddings)
 
 
