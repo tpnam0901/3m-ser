@@ -6,13 +6,16 @@ import torch
 from torch import Tensor
 
 from models.losses import CombinedMarginLoss
-from models.networks import MMSERA, SERVER, AudioOnly, TextOnly
+from models.networks import AudioOnly_v2, MMSERA_v2, SERVER_v2, TextOnly_v2
 from utils.torch.trainer import TorchTrainer
 
 
 class Trainer(TorchTrainer):
     def __init__(
-        self, network: Union[MMSERA, AudioOnly, TextOnly, SERVER], criterion: torch.nn.CrossEntropyLoss = None, **kwargs
+        self,
+        network: Union[MMSERA_v2, SERVER_v2, AudioOnly_v2, TextOnly_v2],
+        criterion: torch.nn.CrossEntropyLoss = None,
+        **kwargs
     ):
         super().__init__(**kwargs)
         self.network = network
@@ -65,7 +68,9 @@ class Trainer(TorchTrainer):
 
 
 class MarginTrainer(TorchTrainer):
-    def __init__(self, network: Union[MMSERA, AudioOnly, TextOnly, SERVER], criterion: CombinedMarginLoss, **kwargs):
+    def __init__(
+        self, network: Union[MMSERA_v2, SERVER_v2, AudioOnly_v2, TextOnly_v2], criterion: CombinedMarginLoss, **kwargs
+    ):
         super().__init__(**kwargs)
         assert isinstance(criterion, CombinedMarginLoss), "Criterion must be CombinedMarginLoss"
         self.network = network

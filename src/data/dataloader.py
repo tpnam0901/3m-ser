@@ -7,10 +7,10 @@ import soundfile as sf
 import torch
 import torchaudio
 from torch.utils.data import DataLoader, Dataset
-from torchvggish.vggish_input import waveform_to_examples
 from transformers import BertTokenizer, RobertaTokenizer
 
 from configs.base import Config
+from torchvggish.vggish_input import waveform_to_examples
 
 
 class BaseDataset(Dataset):
@@ -92,9 +92,20 @@ class IEMOCAPDataset(BaseDataset):
         return input_ids, samples, label
 
 
+class IEMOCAPAudioDataset(BaseDataset):
+    def __getitem__(self, index: int) -> Dict[str, np.ndarray]:
+        audio_path, label = self.data_list[index]
+        samples = self.__paudio__(audio_path)
+        label = self.__plabel__(label)
+        # Dummy input_ids for text encoder
+        input_ids = torch.zeros(1, dtype=torch.long)
+        return input_ids, samples, label
+
+
 def build_train_test_dataset(opt: Config):
     DATASET_MAP = {
         "IEMOCAP": IEMOCAPDataset,
+        "IEMOCAPAudio": IEMOCAPAudioDataset,
         "ESD": BaseDataset,
         "MELD": BaseDataset,
     }

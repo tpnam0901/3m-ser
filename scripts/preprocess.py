@@ -45,7 +45,58 @@ def export_mp4_to_audio(
 
 
 def preprocess_IEMOCAP(args):
-    raise NotImplementedError("Not implemented yet")
+    data_root = args.data_root
+    ignore_length = args.ignore_length
+
+    session_id = list(range(1, 6))
+
+    samples = []
+    labels = []
+    iemocap2label = LABEL_MAP
+    iemocap2label.update({"exc": 1})
+
+    for sess_id in tqdm.tqdm(session_id):
+        sess_path = os.path.join(data_root, "Session{}".format(sess_id))
+        sess_autio_root = os.path.join(sess_path, "sentences/wav")
+        sess_label_root = os.path.join(sess_path, "dialog/EmoEvaluation")
+        label_paths = glob.glob(os.path.join(sess_label_root, "*.txt"))
+        for l_path in label_paths:
+            with open(l_path, "r") as f:
+                label = f.read().split("\n")
+                for l in label:
+                    if str(l).startswith("["):
+                        data = l.split()
+                        wav_folder = data[3][:-5]
+                        wav_name = data[3] + ".wav"
+                        emo = data[4]
+                        wav_path = os.path.join(sess_autio_root, wav_folder, wav_name)
+                        wav_data, _ = sf.read(wav_path, dtype="int16")
+                        # Ignore samples with length < ignore_length
+                        if len(wav_data) < ignore_length:
+                            logging.warning(f"Ignoring sample {wav_path} with length {len(wav_data)}")
+                            continue
+                        emo = iemocap2label.get(emo, None)
+                        if emo is not None:
+                            samples.append((wav_path, emo))
+                            labels.append(emo)
+
+    # Shuffle and split
+    temp = list(zip(samples, labels))
+    random.Random(args.seed).shuffle(temp)
+    samples, labels = zip(*temp)
+    train_samples, test_samples, _, _ = train_test_split(samples, labels, test_size=0.2, random_state=args.seed)
+
+    # Save data
+    os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
+    with open(os.path.join(args.dataset + "_preprocessed", "train.pkl"), "wb") as f:
+        pickle.dump(train_samples, f)
+    with open(os.path.join(args.dataset + "_preprocessed", "test.pkl"), "wb") as f:
+        pickle.dump(test_samples, f)
+
+    logging.info(f"Train samples: {len(train_samples)}")
+    logging.info(f"Test samples: {len(test_samples)}")
+    logging.info(f"Saved to {args.dataset + '_preprocessed'}")
+    logging.info("Preprocessing finished successfully")
 
 
 def preprocess_MELD(args):

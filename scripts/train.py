@@ -12,7 +12,6 @@ import random
 import numpy as np
 import torch
 from torch import nn, optim
-from transformers import BertTokenizer, RobertaTokenizer
 
 from configs.base import Config
 from data.dataloader import build_train_test_dataset
@@ -33,22 +32,7 @@ def main(opt: Config):
     logging.info("Initializing model...")
     # Model
     try:
-        if opt.model_type.endswith("v2"):
-            network = getattr(networks, opt.model_type)(opt)
-        else:
-            network = getattr(networks, opt.model_type)(
-                num_classes=opt.num_classes,
-                num_attention_head=opt.num_attention_head,
-                dropout=opt.dropout,
-                text_encoder_type=opt.text_encoder_type,
-                text_encoder_dim=opt.text_encoder_dim,
-                text_unfreeze=opt.text_unfreeze,
-                audio_encoder_type=opt.audio_encoder_type,
-                audio_encoder_dim=opt.audio_encoder_dim,
-                audio_unfreeze=opt.audio_unfreeze,
-                audio_norm_type=opt.audio_norm_type,
-                fusion_head_output_type=opt.fusion_head_output_type,
-            )
+        network = getattr(networks, opt.model_type)(opt)
         network.to(device)
     except AttributeError:
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))

@@ -126,7 +126,7 @@ class Config(BaseConfig):
         self.learning_rate_gamma: float = 0.1
 
         # Dataset
-        self.data_name: str = "IEMOCAP"  # [IEMOCAP, ESD, MELD]
+        self.data_name: str = "IEMOCAP"  # [IEMOCAP, ESD, MELD, IEMOCAPAudio]
         self.data_root: str = "data/IEMOCAP"  # folder contains train.pkl and test.pkl
         # use for training with batch size > 1
         self.text_max_length: int = 297
@@ -140,12 +140,16 @@ class Config(BaseConfig):
         self.text_encoder_type: str = "bert"  # [bert, roberta]
         self.text_encoder_dim: int = 768
         self.text_unfreeze: bool = False
-        self.audio_encoder_type: str = "panns"  # [vggish, panns, hubert_base, wav2vec2_base, wavlm_base]
-        self.audio_encoder_dim: int = 2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base
+        self.audio_encoder_type: str = "panns"  # [vggish, panns, hubert_base, wav2vec2_base, wavlm_base, lstm]
+        self.audio_encoder_dim: int = 2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base, 512 - lstm
         self.audio_norm_type: str = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze: bool = True
 
         self.fusion_head_output_type: str = "cls"  # [cls, mean, max]
+
+        # For LSTM
+        self.lstm_hidden_size = 512  # should be the same as audio_encoder_dim
+        self.lstm_num_layers = 2
 
         # For hyperparameter search
         self.optim_attributes: List = None
