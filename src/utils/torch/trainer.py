@@ -24,8 +24,8 @@ class TorchTrainer(ABC, nn.Module):
     def __init__(self, log_dir: str = "logs"):
         super().__init__()
         self.log_dir = log_dir
-        self.global_step = 0
-        self.start_epoch = 0
+        self.global_step = 1
+        self.start_epoch = 1
 
     def predict(self, inputs: Union[torch.Tensor, Dict, List]) -> Union[torch.Tensor, Dict, List]:
         """
