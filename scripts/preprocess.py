@@ -1,280 +1,298 @@
 import argparse
-import csv
+import glob
 import logging
 import os
 import pickle
 import random
-import sys
-import time
 
 import pandas as pd
-import torch
-from torchvggish import vggish_input
+import soundfile as sf
+import tqdm
+from moviepy.editor import VideoFileClip
+from sklearn.model_selection import train_test_split
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+LABEL_MAP = {
+    "ang": 0,
+    "hap": 1,
+    "sad": 2,
+    "neu": 3,
+}
 
 logging.getLogger().setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
-def file_search(dirname, ret, list_avoid_dir=[]):
-    filenames = os.listdir(dirname)
-    for filename in filenames:
-        full_filename = os.path.join(dirname, filename)
+def export_mp4_to_audio(
+    mp4_file: str,
+    wav_file: str,
+    verbose: bool = False,
+):
+    """Convert mp4 file to wav file
 
-        if os.path.isdir(full_filename):
-            if full_filename.split("/")[-1] in list_avoid_dir:
-                continue
-            else:
-                file_search(full_filename, ret, list_avoid_dir)
-        else:
-            ret.append(full_filename)
+    Args:
+        mp4_file (str): Path to mp4 input file
+        wav_file (str): Path to wav output file
+        verbose (bool, optional): Whether to print ffmpeg output. Defaults to False.
+    """
+    try:
+        video = VideoFileClip(mp4_file)
+    except:
+        logging.warning(f"Failed to load {mp4_file}")
+        return 0
+    audio = video.audio
+    audio.write_audiofile(wav_file, verbose=verbose)
+    return 1
 
 
-def extract_trans(list_in_file, out_file):
-    lines = []
-    for in_file in list_in_file:
-        cnt = 0
-        with open(in_file, "r") as f1:
-            lines = f1.readlines()
-        with open(out_file, "a") as f2:
-            csv_writer = csv.writer(f2)
-            lines = sorted(lines)  # sort based on first element
-            for line in lines:
-                name = line.split(":")[0].split(" ")[0].strip()
-                # unwanted case
-                if name[:3] != "Ses":  # noise transcription such as reply  M: sorry
+def preprocess_IEMOCAP(args):
+    data_root = args.data_root
+    ignore_length = args.ignore_length
+
+    session_id = list(range(1, 6))
+
+    samples = []
+    labels = []
+    iemocap2label = LABEL_MAP
+    iemocap2label.update({"exc": 1})
+
+    for sess_id in tqdm.tqdm(session_id):
+        sess_path = os.path.join(data_root, "Session{}".format(sess_id))
+        sess_autio_root = os.path.join(sess_path, "sentences/wav")
+        sess_label_root = os.path.join(sess_path, "dialog/EmoEvaluation")
+        label_paths = glob.glob(os.path.join(sess_label_root, "*.txt"))
+        for l_path in label_paths:
+            with open(l_path, "r") as f:
+                label = f.read().split("\n")
+                for l in label:
+                    if str(l).startswith("["):
+                        data = l.split()
+                        wav_folder = data[3][:-5]
+                        wav_name = data[3] + ".wav"
+                        emo = data[4]
+                        wav_path = os.path.join(sess_autio_root, wav_folder, wav_name)
+                        wav_data, _ = sf.read(wav_path, dtype="int16")
+                        # Ignore samples with length < ignore_length
+                        if len(wav_data) < ignore_length:
+                            logging.warning(
+                                f"Ignoring sample {wav_path} with length {len(wav_data)}"
+                            )
+                            continue
+                        emo = iemocap2label.get(emo, None)
+                        if emo is not None:
+                            samples.append((wav_path, emo))
+                            labels.append(emo)
+
+    # Shuffle and split
+    temp = list(zip(samples, labels))
+    random.Random(args.seed).shuffle(temp)
+    samples, labels = zip(*temp)
+    train_samples, test_samples, _, _ = train_test_split(
+        samples, labels, test_size=0.2, random_state=args.seed
+    )
+
+    # Save data
+    os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
+    with open(os.path.join(args.dataset + "_preprocessed", "train.pkl"), "wb") as f:
+        pickle.dump(train_samples, f)
+    with open(os.path.join(args.dataset + "_preprocessed", "test.pkl"), "wb") as f:
+        pickle.dump(test_samples, f)
+
+    logging.info(f"Train samples: {len(train_samples)}")
+    logging.info(f"Test samples: {len(test_samples)}")
+    logging.info(f"Saved to {args.dataset + '_preprocessed'}")
+    logging.info("Preprocessing finished successfully")
+
+
+def preprocess_MELD(args):
+    meld2label = {
+        "sadness": "sad",
+        "neutral": "neu",
+        "joy": "hap",
+        "anger": "ang",
+    }
+    data_root = args.data_root
+    ignore_length = args.ignore_length
+
+    train_df = pd.read_csv(os.path.join(data_root, "train_sent_emo.csv"))
+    dev_df = pd.read_csv(os.path.join(data_root, "dev_sent_emo.csv"))
+    test_df = pd.read_csv(os.path.join(data_root, "test_sent_emo.csv"))
+
+    logging.info("Preprocessing train set")
+    train_samples = []
+    for row in tqdm.tqdm(train_df.iterrows()):
+        emotion = row[1]["Emotion"]
+        target = meld2label.get(emotion, None)
+        if target is not None:
+            dia = row[1]["Dialogue_ID"]
+            utt = row[1]["Utterance_ID"]
+            inp_path = os.path.join(data_root, "train_splits", f"dia{dia}_utt{utt}.mp4")
+            out_path = os.path.join(data_root, "train_splits", f"dia{dia}_utt{utt}.wav")
+            if export_mp4_to_audio(inp_path, out_path):
+                wav_data, sr = sf.read(out_path, dtype="int16")
+                # Ignore samples with length < ignore_length
+                if len(wav_data) < ignore_length:
+                    logging.warning(
+                        f"Ignoring sample {out_path} with length {len(wav_data)}"
+                    )
                     continue
-                elif name[-3:-1] == "XX":  # we don't have matching pair in label
+                train_samples.append(
+                    (os.path.abspath(out_path), row[1]["Utterance"], LABEL_MAP[target])
+                )
+
+    logging.info("Preprocessing dev set")
+    dev_samples = []
+    for row in tqdm.tqdm(dev_df.iterrows()):
+        emotion = row[1]["Emotion"]
+        target = meld2label.get(emotion, None)
+        if target is not None:
+            dia = row[1]["Dialogue_ID"]
+            utt = row[1]["Utterance_ID"]
+            inp_path = os.path.join(
+                data_root, "dev_splits_complete", f"dia{dia}_utt{utt}.mp4"
+            )
+            out_path = os.path.join(
+                data_root, "dev_splits_complete", f"dia{dia}_utt{utt}.wav"
+            )
+            if export_mp4_to_audio(inp_path, out_path):
+                wav_data, sr = sf.read(out_path, dtype="int16")
+                # Ignore samples with length < ignore_length
+                if len(wav_data) < ignore_length:
+                    logging.warning(
+                        f"Ignoring sample {out_path} with length {len(wav_data)}"
+                    )
                     continue
-                trans = line.split(":")[1].strip()
-                cnt += 1
-                csv_writer.writerow([name, trans])
+                dev_samples.append(
+                    (os.path.abspath(out_path), row[1]["Utterance"], LABEL_MAP[target])
+                )
+
+    logging.info("Preprocessing test set")
+    test_samples = []
+    for row in tqdm.tqdm(test_df.iterrows()):
+        emotion = row[1]["Emotion"]
+        target = meld2label.get(emotion, None)
+        if target is not None:
+            dia = row[1]["Dialogue_ID"]
+            utt = row[1]["Utterance_ID"]
+            inp_path = os.path.join(
+                data_root, "output_repeated_splits_test", f"dia{dia}_utt{utt}.mp4"
+            )
+            out_path = os.path.join(
+                data_root, "output_repeated_splits_test", f"dia{dia}_utt{utt}.wav"
+            )
+            if export_mp4_to_audio(inp_path, out_path):
+                wav_data, sr = sf.read(out_path, dtype="int16")
+                # Ignore samples with length < ignore_length
+                if len(wav_data) < ignore_length:
+                    logging.warning(
+                        f"Ignoring sample {out_path} with length {len(wav_data)}"
+                    )
+                    continue
+                test_samples.append(
+                    (os.path.abspath(out_path), row[1]["Utterance"], LABEL_MAP[target])
+                )
+
+    # Save data
+    os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
+    with open(os.path.join(args.dataset + "_preprocessed", "train.pkl"), "wb") as f:
+        pickle.dump(train_samples, f)
+    with open(os.path.join(args.dataset + "_preprocessed", "dev.pkl"), "wb") as f:
+        pickle.dump(dev_samples, f)
+    with open(os.path.join(args.dataset + "_preprocessed", "test.pkl"), "wb") as f:
+        pickle.dump(test_samples, f)
+
+    logging.info(f"Train samples: {len(train_samples)}")
+    logging.info(f"Dev samples: {len(dev_samples)}")
+    logging.info(f"Test samples: {len(test_samples)}")
+    logging.info(f"Saved to {args.dataset + '_preprocessed'}")
+    logging.info("Preprocessing finished successfully")
 
 
-def find_category(lines):
-    is_target = True
+def preprocess_ESD(args):
+    esd2label = {
+        "Angry": "ang",
+        "Happy": "hap",
+        "Neutral": "neu",
+        "Sad": "sad",
+    }
 
-    id = ""
-    c_label = ""
-    list_ret = []
+    directory = glob.glob(args.data_root + "/*")
+    samples = []
+    labels = []
 
-    list_category = ["ang", "hap", "sad", "neu", "fru", "exc", "fea", "sur", "dis", "oth", "xxx"]
+    # Loop through all folders
+    for dir in tqdm.tqdm(directory):
+        # Read label file
+        label_path = os.path.join(dir, dir.split("/")[-1] + ".txt")
+        with open(label_path, "r") as f:
+            label = f.read().strip().splitlines()
+        # Extract samples from label file
+        for l in label:
+            filename, transcript, emotion = l.split("\t")
+            target = esd2label.get(emotion, None)
+            if target is not None:
+                samples.append(
+                    (
+                        os.path.abspath(os.path.join(dir, emotion, filename + ".wav")),
+                        transcript,
+                        LABEL_MAP[target],
+                    )
+                )
+                # Labels are use for splitting
+                labels.append(LABEL_MAP[target])
 
-    category = {}
-    for c_type in list_category:
-        if category.__contains__(c_type):
-            pass
-        else:
-            category[c_type] = len(category)
+    # Shuffle and split
+    temp = list(zip(samples, labels))
+    random.Random(args.seed).shuffle(temp)
+    samples, labels = zip(*temp)
+    train_samples, test_samples, _, _ = train_test_split(
+        samples, labels, test_size=0.2, random_state=args.seed
+    )
 
-    for line in lines:
-        if is_target == True:
-            try:
-                id = line.split("\t")[1].strip()  #  extract ID
-                c_label = line.split("\t")[2].strip()  #  extract category
-                if not category.__contains__(c_label):
-                    print("ERROR nokey ", c_label)
-                    sys.exit()
+    # Save data
+    os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
+    with open(os.path.join(args.dataset + "_preprocessed", "train.pkl"), "wb") as f:
+        pickle.dump(train_samples, f)
+    with open(os.path.join(args.dataset + "_preprocessed", "test.pkl"), "wb") as f:
+        pickle.dump(test_samples, f)
 
-                list_ret.append([id, c_label])
-                is_target = False
-
-            except:
-                print("ERROR ", line)
-                sys.exit()
-
-        else:
-            if line == "\n":
-                is_target = True
-
-    return list_ret
-
-
-def extract_labels(list_in_file, out_file):
-    id = ""
-    lines = []
-    list_ret = []
-
-    for in_file in list_in_file:
-        with open(in_file, "r") as f1:
-            lines = f1.readlines()
-            lines = lines[2:]  # remove head
-            list_ret = find_category(lines)
-
-        list_ret = sorted(list_ret)  # sort based on first element
-
-        with open(out_file, "a") as f2:
-            csv_writer = csv.writer(f2)
-            csv_writer.writerows(list_ret)
+    logging.info(f"Train samples: {len(train_samples)}")
+    logging.info(f"Test samples: {len(test_samples)}")
+    logging.info(f"Saved to {args.dataset + '_preprocessed'}")
+    logging.info("Preprocessing finished successfully")
 
 
 def main(args):
-    list_files = []
-    output_dir = args.output_dir
-    data_root = args.data_root
-    os.makedirs(output_dir, exist_ok=True)
+    preprocess_fn = {
+        "IEMOCAP": preprocess_IEMOCAP,
+        "ESD": preprocess_ESD,
+        "MELD": preprocess_MELD,
+    }
 
-    assert os.path.exists(data_root), "data root does not exist"
-
-    for x in range(5):
-        sess_name = "Session" + str(x + 1)
-
-        path = os.path.join(data_root, sess_name, "dialog", "transcriptions") + "/"
-        file_search(path, list_files)
-        list_files = sorted(list_files)
-
-        print(sess_name + ", #sum files: " + str(len(list_files)))
-
-    extract_trans(list_files, os.path.join(output_dir, "processed_trans.csv"))
-
-    # read contents of csv file
-    file = pd.read_csv(os.path.join(output_dir, "processed_trans.csv"))
-
-    # adding header
-    headerList = ["sessionID", "text"]
-
-    # converting data frame to csv
-    file.to_csv(os.path.join(output_dir, "processed_trans_head.csv"), header=headerList, index=False)
-
-    list_category = ["ang", "hap", "sad", "neu", "fru", "exc", "fea", "sur", "dis", "oth", "xxx"]
-
-    category = {}
-    for c_type in list_category:
-        if category.__contains__(c_type):
-            pass
-        else:
-            category[c_type] = len(category)
-
-    # [schema] ID, label [csv]
-
-    list_files = []
-    list_avoid_dir = ["Attribute", "Categorical", "Self-evaluation"]
-
-    for x in range(5):
-        sess_name = "Session" + str(x + 1)
-
-        path = os.path.join(data_root, sess_name, "dialog", "EmoEvaluation") + "/"
-        file_search(path, list_files, list_avoid_dir)
-        list_files = sorted(list_files)
-
-        print(sess_name + ", #sum files: " + str(len(list_files)))
-
-    extract_labels(list_files, os.path.join(output_dir, "processed_labels.csv"))
-
-    # read contents of csv file
-    file = pd.read_csv(os.path.join(output_dir, "processed_labels.csv"))
-
-    # adding header
-    headerList = ["sessionID", "label"]
-
-    # converting data frame to csv
-    file.to_csv(os.path.join(output_dir, "processed_labels_head.csv"), header=headerList, index=False)
-
-    dfl = pd.read_csv(os.path.join(output_dir, "processed_labels_head.csv"))
-    dfl.loc[dfl["label"] == "ang", "label"] = 0
-    dfl.loc[dfl["label"] == "hap", "label"] = 1
-    dfl.loc[dfl["label"] == "exc", "label"] = 1
-    dfl.loc[dfl["label"] == "sad", "label"] = 2
-    dfl.loc[dfl["label"] == "neu", "label"] = 3
-    dfl.loc[dfl["label"] == "fru", "label"] = -1
-    dfl.loc[dfl["label"] == "fea", "label"] = -1
-    dfl.loc[dfl["label"] == "sur", "label"] = -1
-    dfl.loc[dfl["label"] == "dis", "label"] = -1
-    dfl.loc[dfl["label"] == "oth", "label"] = -1
-    dfl.loc[dfl["label"] == "xxx", "label"] = -1
-    dfl.head(10)
-
-    dfl.to_csv(os.path.join(output_dir, "processed_digital_labels_head.csv"), index=False)
-
-    # reading two csv files
-    data1 = pd.read_csv(os.path.join(output_dir, "processed_trans_head.csv"))
-    data2 = pd.read_csv(os.path.join(output_dir, "processed_digital_labels_head.csv"))
-
-    # using merge function by setting how='inner'
-    translabels = pd.merge(data1, data2, on="sessionID", how="inner")
-
-    translabels.to_csv(os.path.join(output_dir, "processed_trans_labels_head.csv"), index=False)
-
-    list_files = []
-    for x in range(5):
-        sess_name = "Session" + str(x + 1)
-        path = os.path.join(data_root, sess_name, "sentences", "wav") + "/"
-        file_search(path, list_files)
-        list_files = sorted(list_files)
-        print(sess_name + ", #sum files: " + str(len(list_files)))
-
-    df = pd.read_csv(os.path.join(output_dir, "processed_trans_labels_head.csv"))
-
-    no_rows = len(list_files)
-    # cnt = 0
-    index = 0
-    sprectrogram_shape = []
-    docs = []
-    bookmark = 0
-    extraLabel = 0
-    for everyFile in list_files:
-        if everyFile.split("/")[-1].endswith(".wav"):
-            filename = everyFile.split("/")[-1].strip(".wav")
-            print(filename)
-            lable = df.loc[df["sessionID"] == filename]["label"].values[0]
-            text = df.loc[df["sessionID"] == filename]["text"].values[0]
-            # print('label',lable)
-            if lable != -1:
-                input_batch = vggish_input.wavfile_to_examples(everyFile)
-                # print(input_batch.size())
-                if (len(input_batch.size()) < 4) or (input_batch.size(dim=0) <= 1):
-                    # print("Wrong", input_batch.size())
-                    continue
-                elif (len(input_batch.size()) == 4) and (input_batch.size(dim=0) > 1):
-                    # print("Correct", input_batch.size())
-                    docs.append(
-                        {
-                            "fileName": everyFile.split("/")[-1].strip(".wav"),
-                            "text": text,
-                            "sprectrome": input_batch,
-                            "label": lable,
-                        }
-                    )
-                    index += 1
-                    # print('index',index)
-                    # cnt+=1
-                    # if cnt > 100:
-                    # break
-            else:
-                extraLabel = extraLabel + 1
-                # print('extraLabel',extraLabel)
-
-    random.shuffle(docs)
-    random.shuffle(docs)
-    random.shuffle(docs)
-    total_length = len(docs)
-    train_length = int(0.8 * total_length)
-    train_list = docs[0:train_length]
-    test_list = docs[train_length:]
-    print("no of items for train ", len(train_list))
-    print("no of items for test ", len(test_list))
-    # no of items for train  4424
-    # no of items for test  1107
-
-    # Write data
-    train_file = open(os.path.join(output_dir, "train_data.pkl"), "wb")
-
-    pickle.dump(train_list, train_file)
-
-    train_file.close()
-
-    test_file = open(os.path.join(output_dir, "test_data.pkl"), "wb")
-
-    pickle.dump(test_list, test_file)
-
-    test_file.close()
+    preprocess_fn[args.dataset](args)
 
 
 def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_root", type=str, help="Path to folder containing IEMOCAP data", default="IEMOCAP_full_release")
-    parser.add_argument("--output_dir", type=str, help="Path to folder to save processed data", default="data")
+    parser.add_argument(
+        "-ds", "--dataset", type=str, default="ESD", choices=["IEMOCAP", "ESD", "MELD"]
+    )
+    parser.add_argument(
+        "-dr",
+        "--data_root",
+        type=str,
+        help="Path to folder containing IEMOCAP data",
+        required=True,
+    )
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--ignore_length",
+        type=int,
+        default=0,
+        help="Ignore samples with length < ignore_length",
+    )
+
     return parser.parse_args()
 
 

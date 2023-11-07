@@ -1,7 +1,15 @@
 import logging
 import os
+import sys
 from abc import ABC, abstractmethod
 from typing import List
+
+import numpy as np
+import soundfile as sf
+import torch
+import torch.nn as nn
+
+from torchvggish.vggish_input import waveform_to_examples
 
 
 class Base(ABC):
@@ -173,3 +181,174 @@ class Config(BaseConfig):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+
+class LSTM_Mel(nn.Module):
+    def __init__(
+        self, feature_module, input_size=512, hidden_size=512, num_layers=2, **kwargs
+    ):
+        super(LSTM_Mel, self).__init__(**kwargs)
+        self.feature_module = feature_module
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+        )
+
+    def forward(self, audio):
+        out = []
+        for i in range(audio.size(0)):
+            out_dim1 = []
+            for j in range(audio.size(1)):
+                x = self.feature_module(audio[i, j : j + 1, :])
+                x = torch.transpose(x, 1, 3)
+                x = x.reshape(x.size(0), -1, x.size(3))
+                x = x.mean(dim=1)
+                x = x.squeeze(0)
+                out_dim1.append(x)
+            out.append(torch.stack(out_dim1, axis=0))
+        out = torch.stack(out, axis=0)
+
+        x, _ = self.lstm(out)
+        # take only the last output
+        x = x[:, -1, :]
+        return x
+
+
+def build_lstm_mel_encoder(opt: Config) -> nn.Module:
+    weights = "vggish_feature_extractor.pth"
+    url = "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/wav2vec_base/feature_extractor_wav2vec_base.pth"
+
+    layers = []
+    in_channels = 1
+    for v in [64, "M", 128, "M", 256, 256, "M", 512, 512, "M"]:
+        if v == "M":
+            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        else:
+            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            layers += [conv2d, nn.ReLU(inplace=True)]
+            in_channels = v
+
+    if not os.path.exists(os.path.join("/tmp/{}".format(weights))):
+        os.system("wget {} -O /tmp/{}".format(url, weights))
+    feature_extractor = nn.Sequential(*layers)
+    feature_extractor.to("cpu")
+    state_dict = torch.load(os.path.join("/tmp/{}".format(weights)), map_location="cpu")
+    feature_extractor.load_state_dict(state_dict)
+
+    model = LSTM_Mel(
+        feature_extractor,
+        input_size=512,
+        hidden_size=opt.lstm_hidden_size,
+        num_layers=opt.lstm_num_layers,
+    )
+
+    return model
+
+
+def build_audio_encoder(opt: Config) -> nn.Module:
+    """A function to build audio encoder
+
+    Args:
+        opt (Config): Config object
+
+    Returns:
+        nn.Module: Audio encoder
+    """
+    type = opt.audio_encoder_type
+
+    encoders = {
+        "lstm_mel": build_lstm_mel_encoder,
+    }
+    assert type in encoders.keys(), f"Invalid audio encoder type: {type}"
+    return encoders[type](opt)
+
+
+class AudioOnly_v2(nn.Module):
+    def __init__(
+        self,
+        opt: Config,
+        device: str = "cpu",
+    ):
+        """Speech Emotion Recognition with Audio Only
+
+        Args:
+            opt (Config): Config object
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(AudioOnly_v2, self).__init__()
+
+        # Audio module
+        self.audio_encoder = build_audio_encoder(opt)
+        self.audio_encoder.to(device)
+        # Freeze/Unfreeze the audio module
+        for param in self.audio_encoder.parameters():
+            param.requires_grad = opt.audio_unfreeze
+
+        self.dropout = nn.Dropout(opt.dropout)
+
+        # self.linear = nn.Linear(opt.audio_encoder_dim, opt.audio_encoder_dim)
+        # self.classifer = nn.Linear(opt.audio_encoder_dim, opt.num_classes)
+        # Start testing #
+        self.linear = nn.Linear(opt.audio_encoder_dim, opt.linear_layer_last_dim)
+        self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
+        # End testing #
+
+        self.fusion_head_output_type = opt.fusion_head_output_type
+
+    def forward(self, audio: torch.Tensor):
+        # Audio processing
+        audio_embeddings = self.audio_encoder(audio)
+
+        # Check if vggish outputs is (128) or (num_samples, 128)
+        if len(audio_embeddings.size()) == 1:
+            audio_embeddings = audio_embeddings.unsqueeze(0)
+
+        # Expand the audio embeddings to match the text embeddings
+        if len(audio_embeddings.size()) == 2:
+            audio_embeddings = audio_embeddings.unsqueeze(0)
+
+        # Get classification output
+        if self.fusion_head_output_type == "cls":
+            audio_embeddings = audio_embeddings[:, 0, :]
+        elif self.fusion_head_output_type == "mean":
+            audio_embeddings = audio_embeddings.mean(dim=1)
+        elif self.fusion_head_output_type == "max":
+            audio_embeddings = audio_embeddings.max(dim=1)
+        else:
+            raise ValueError("Invalid fusion head output type")
+
+        # Classification head
+        x = self.linear(audio_embeddings)
+        x = self.dropout(x)
+        out = self.classifer(x)
+
+        return out
+
+
+opt = Config()
+opt.load("checkpoints/AudioOnly_v2/cls_bert_lstm_mel/20231026-121302/opt.log")
+
+model = AudioOnly_v2(opt)
+model.to("cpu")
+model.load_state_dict(
+    torch.load(
+        "checkpoints/AudioOnly_v2/cls_bert_lstm_mel/20231026-121302/weights/best_acc/checkpoint_0_0.pt",
+        map_location=torch.device("cpu"),
+    )["state_dict_network"]
+)
+
+wav_path = "IEMOCAP_emotion/test/0/Ses01F_impro04_F028.wav"
+
+wav_data, sr = sf.read(wav_path, dtype="int16")
+samples = wav_data / 32768.0  # Convert to [-1.0, +1.0]
+
+samples = waveform_to_examples(samples, sr, return_tensor=False)  # num_samples, 96, 64
+samples = np.expand_dims(samples, axis=1)  # num_samples, 1, 96, 64
+samples = torch.from_numpy(samples.astype(np.float32))
+
+index2label = ["neutral", "positive", "negative"]
+with torch.no_grad():
+    output = model(samples.unsqueeze(0))
+    print(torch.argmax(output))
