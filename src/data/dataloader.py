@@ -54,7 +54,7 @@ class BaseDataset(Dataset):
         elif self.audio_max_length is not None:
             samples = samples[: self.audio_max_length]
 
-        if self.audio_encoder_type == "vggish":
+        if self.audio_encoder_type == "vggish" or self.audio_encoder_type == "lstm_mel":
             samples = waveform_to_examples(samples, sr, return_tensor=False)  # num_samples, 96, 64
             samples = np.expand_dims(samples, axis=1)  # num_samples, 1, 96, 64
         elif self.audio_encoder_type != "panns":
