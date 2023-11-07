@@ -41,6 +41,7 @@ class CheckpointsCallback(Callback):
         save_freq: int = 1000,
         max_to_keep: int = 3,
         save_best_val: bool = False,
+        save_all_states: bool = False,
     ):
         """Callback to save checkpoints during training.
 
@@ -49,7 +50,7 @@ class CheckpointsCallback(Callback):
             save_freq (int, optional): The frequency at which checkpoints will be saved. Defaults to 1000.
             keep_one_only (bool, optional): Whether to keep only the last checkpoint. Defaults to True.
             save_best_val (bool, optional): Whether to save the best model based on the validation loss. Defaults to False.
-
+            save_all_states (bool, optional): Whether to save all the states of the model. Defaults to False.
         """
         self.checkpoint_dir = checkpoint_dir
         os.makedirs(self.checkpoint_dir, exist_ok=True)
@@ -65,6 +66,8 @@ class CheckpointsCallback(Callback):
                             The model will save the lowest validation value if the metric starts with 'loss' and the highest value otherwise."
             )
             self.best_val = {}
+
+        self.save_all_states = save_all_states
 
     def __call__(
         self,
@@ -93,7 +96,12 @@ class CheckpointsCallback(Callback):
         if not isValPhase:
             if global_step % self.save_freq == 0:
                 logger.info("Saving model at step {}".format(global_step))
-                ckpt_path = trainer.save(self.checkpoint_dir, global_step)
+                if self.save_all_states:
+                    ckpt_path = trainer.save_all_states(
+                        self.checkpoint_dir, global_epoch, global_step
+                    )
+                else:
+                    ckpt_path = trainer.save(self.checkpoint_dir, global_step)
                 self.keep.append(ckpt_path)
                 if len(self.keep) > self.max_to_keep:
                     logger.info(f"Deleting checkpoint {self.keep[0]}")
@@ -103,20 +111,74 @@ class CheckpointsCallback(Callback):
         elif isValPhase and self.save_best_val:
             for k, v in logs.items():
                 if k not in self.best_val:
-                    logger.info("Model {} improve from inf to {}, Saving model...".format(k, v))
+                    logger.info(
+                        "Model {} improve from inf to {}, Saving model...".format(k, v)
+                    )
                     self.best_val[k] = v
-                    os.makedirs(os.path.join(self.checkpoint_dir, "best_{}".format(k)), exist_ok=True)
-                    trainer.save(os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0)
+                    os.makedirs(
+                        os.path.join(self.checkpoint_dir, "best_{}".format(k)),
+                        exist_ok=True,
+                    )
+                    if self.save_all_states:
+                        ckpt_path = trainer.save_all_states(
+                            os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0, 0
+                        )
+                    else:
+                        ckpt_path = trainer.save(
+                            os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0
+                        )
                 else:
                     if k.startswith("loss"):
                         if v < self.best_val[k]:
-                            logger.info("Model {} improve from {} to {}, Saving model...".format(k, self.best_val[k], v))
+                            logger.info(
+                                "Model {} improve from {} to {}, Saving model...".format(
+                                    k, self.best_val[k], v
+                                )
+                            )
                             self.best_val[k] = v
-                            os.makedirs(os.path.join(self.checkpoint_dir, "best_{}".format(k)), exist_ok=True)
-                            trainer.save(os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0)
+                            os.makedirs(
+                                os.path.join(self.checkpoint_dir, "best_{}".format(k)),
+                                exist_ok=True,
+                            )
+                            if self.save_all_states:
+                                ckpt_path = trainer.save_all_states(
+                                    os.path.join(
+                                        self.checkpoint_dir, "best_{}".format(k)
+                                    ),
+                                    0,
+                                    0,
+                                )
+                            else:
+                                ckpt_path = trainer.save(
+                                    os.path.join(
+                                        self.checkpoint_dir, "best_{}".format(k)
+                                    ),
+                                    0,
+                                )
                     else:
                         if v > self.best_val[k]:
-                            logger.info("Model {} improve from {} to {}, Saving model...".format(k, self.best_val[k], v))
+                            logger.info(
+                                "Model {} improve from {} to {}, Saving model...".format(
+                                    k, self.best_val[k], v
+                                )
+                            )
                             self.best_val[k] = v
-                            os.makedirs(os.path.join(self.checkpoint_dir, "best_{}".format(k)), exist_ok=True)
-                            trainer.save(os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0)
+                            os.makedirs(
+                                os.path.join(self.checkpoint_dir, "best_{}".format(k)),
+                                exist_ok=True,
+                            )
+                            if self.save_all_states:
+                                ckpt_path = trainer.save_all_states(
+                                    os.path.join(
+                                        self.checkpoint_dir, "best_{}".format(k)
+                                    ),
+                                    0,
+                                    0,
+                                )
+                            else:
+                                ckpt_path = trainer.save(
+                                    os.path.join(
+                                        self.checkpoint_dir, "best_{}".format(k)
+                                    ),
+                                    0,
+                                )

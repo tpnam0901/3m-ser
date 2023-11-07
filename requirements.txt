@@ -6,10 +6,10 @@ PyYAML==6.0
 scikit-learn==1.2.2
 scipy==1.10.1
 soundfile==0.12.1
-torch==1.13.1
-torchaudio==0.13.1
-torchsummary==1.5.1
-torchvggish==0.2
-torchvision==0.14.1
+# torchvggish==0.2
 tqdm==4.65.0
 transformers==4.29.2
+torchlibrosa==0.1.0
+h5py==3.9.0
+torchsummary==1.5.1
+moviepy
