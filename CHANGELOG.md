@@ -1,7 +1,11 @@
 # Changelog
 
-## [0.2.0](https://github.com/namphuongtran9196/3m-ser/compare/v0.1.0...v0.2.0) (2023-11-07)
+## [1.0.0](https://github.com/namphuongtran9196/3m-ser/compare/v0.2.0...v1.0.0) (2023-11-07)
 
+
+### ⚠ BREAKING CHANGES
+
+* upgrade to version 1.0
 
 ### Features
 
