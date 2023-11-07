@@ -38,13 +38,7 @@ conda create -n 3m-ser python=3.8 -y
 conda activate 3m-ser
 conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install -r requirements.txt
-```
-- There are some error with torchvggish when using with GPU. Please change the code at line 58,59 in file torchvggish/model.py to accept the GPU:
-```python
-        self._pca_matrix = torch.as_tensor(params["pca_eigen_vectors"]).float().cuda()
-        self._pca_means = torch.as_tensor(params["pca_means"].reshape(-1, 1)).float().cuda()
-        # Or you can set somethings like .to(device) to make it flexible
-```
+
 - Dataset used in this project is IEMOCAP. You can download it [here](https://sail.usc.edu/iemocap/iemocap_release.htm). Or you can download our preprocessed dataset [here](https://github.com/namphuongtran9196/3m-ser-private/releases).
 
 - Preprocess data
@@ -57,18 +51,39 @@ cd scripts && python preprocess.py --data_root <path_to_iemocap_dataset> --outpu
 cd scripts && python train.py -cfg <path_to_config_file>
 ```
 
-- You can visualize the confusion matrix of the model on the test set by following the instructions in the [notebook](./src/visualization/confusion_matrix.ipynb).
+- You can visualize the confusion matrix of the model and other metrics on the test set by following the instructions in the [notebook](./src/visualization/metrics.ipynb).
 
-- You can also find our pre-trained models in the [release](https://github.com/namphuongtran9196/3m-ser-private/releases).
+- You can also find our pre-trained models in the [release](https://github.com/namphuongtran9196/3m-ser/releases).
 
 ## Download
-- We provide some pre-trained models which achieve the results as in the paper. You can download them [here](https://github.com/namphuongtran9196/3m-ser-private/releases).
+- We provide some pre-trained models which achieve the results as in the paper. You can download them [here](https://github.com/namphuongtran9196/3m-ser/releases).
 ## License
 - We use the [Unlicense](https://unlicense.org/) license. You can use it for any purpose.
 
 ## Citation
 If you use this code or part of it, please cite our work. On GitHub, you can copy this citation in APA or BibTeX format via the "Cite this repository" button. Or, see the comments in CITATION.cff for the raw BibTeX.
 
+```bibtex
+#BIB
+@InProceedings{10.1007/978-3-031-47359-3_11,
+author="Tran, Phuong-Nam
+and Vu, Thuy-Duong Thi
+and Dang, Duc Ngoc Minh
+and Pham, Nhat Truong
+and Tran, Anh-Khoa",
+editor="Vo, Nguyen-Son
+and Tran, Hoai-An",
+title="Multi-modal Speech Emotion Recognition: Improving Accuracy Through Fusion of VGGish and BERT Features with Multi-head Attention",
+booktitle="Industrial Networks and Intelligent Systems",
+year="2023",
+publisher="Springer Nature Switzerland",
+address="Cham",
+pages="148--158",
+abstract="Recent research has shown that multi-modal learning is a successful method for enhancing classification performance by mixing several forms of input, notably in speech-emotion recognition (SER) tasks. However, the difference between the modalities may affect SER performance. To overcome this problem, a novel approach for multi-modal SER called 3M-SER is proposed in this paper. The 3M-SER leverages multi-head attention to fuse information from multiple feature embeddings, including audio and text features. The 3M-SER approach is based on the SERVER approach but includes an additional fusion module that improves the integration of text and audio features, leading to improved classification performance. To further enhance the correlation between the modalities, a LayerNorm is applied to audio features prior to fusion. Our approach achieved an unweighted accuracy (UA) and weighted accuracy (WA) of 79.96{\%} and 80.66{\%}, respectively, on the IEMOCAP benchmark dataset. This indicates that the proposed approach is better than SERVER and recent methods with similar approaches. In addition, it highlights the effectiveness of incorporating an extra fusion module in multi-modal learning.",
+isbn="978-3-031-47359-3"
+}
+
+```
 ## References
 
 [1] Nhat Truong Pham, SERVER: Multi-modal Speech Emotion Recognition using Transformer-based and Vision-based Embeddings (ICIIT), 2023. Available https://github.com/nhattruongpham/mmser.git

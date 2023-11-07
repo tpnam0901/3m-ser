@@ -12,11 +12,12 @@ import random
 import numpy as np
 import torch
 from torch import nn, optim
+from transformers import BertTokenizer, RobertaTokenizer
 
 from configs.base import Config
 from data.dataloader import build_train_test_dataset
 from models import losses, networks
-from trainer import Trainer
+from trainer import MarginTrainer as Trainer
 from utils.configs import get_options
 from utils.torch.callbacks import CheckpointsCallback
 
@@ -32,12 +33,31 @@ def main(opt: Config):
     logging.info("Initializing model...")
     # Model
     try:
-        network = getattr(networks, opt.model_type)(opt)
+        network = getattr(networks, opt.model_type)(
+            num_classes=opt.num_classes,
+            num_attention_head=opt.num_attention_head,
+            dropout=opt.dropout,
+            text_encoder_type=opt.text_encoder_type,
+            text_encoder_dim=opt.text_encoder_dim,
+            text_unfreeze=opt.text_unfreeze,
+            audio_encoder_type=opt.audio_encoder_type,
+            audio_encoder_dim=opt.audio_encoder_dim,
+            audio_unfreeze=opt.audio_unfreeze,
+            audio_norm_type=opt.audio_norm_type,
+            fusion_head_output_type=opt.fusion_head_output_type,
+        )
         network.to(device)
     except AttributeError:
         raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
 
     logging.info("Initializing checkpoint directory and dataset...")
+    if opt.text_encoder_type == "bert":
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    elif opt.text_encoder_type == "roberta":
+        tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+    else:
+        raise NotImplementedError("Tokenizer {} is not implemented".format(opt.text_encoder_type))
+
     # Preapre the checkpoint directory
     opt.checkpoint_dir = checkpoint_dir = os.path.join(
         os.path.abspath(opt.checkpoint_dir),
@@ -51,22 +71,25 @@ def main(opt: Config):
     opt.save(opt)
 
     # Build dataset
-    train_ds, test_ds = build_train_test_dataset(opt)
+    train_ds, test_ds = build_train_test_dataset(
+        opt.data_root,
+        opt.batch_size,
+        tokenizer,
+        opt.audio_max_length,
+        text_max_length=opt.text_max_length,
+        audio_encoder_type=opt.audio_encoder_type,
+    )
 
     logging.info("Initializing trainer...")
-    if opt.loss_type == "FocalLoss":
-        criterion = losses.FocalLoss(gamma=opt.focal_loss_gamma, alpha=opt.focal_loss_alpha)
-        criterion.to(device)
-    else:
-        try:
-            criterion = getattr(losses, opt.loss_type)(
-                feat_dim=opt.feat_dim,
-                num_classes=opt.num_classes,
-                lambda_c=opt.lambda_c,
-            )
-            criterion.to(device)
-        except AttributeError:
-            raise NotImplementedError("Loss {} is not implemented".format(opt.loss_type))
+    criterion = losses.CombinedMarginLoss(
+        in_features=opt.feat_dim,
+        out_features=opt.num_classes,
+        s=opt.margin_loss_scale,
+        m1=opt.margin_loss_m1,
+        m2=opt.margin_loss_m2,
+        m3=opt.margin_loss_m2,
+    )
+    criterion.to(device)
 
     trainer = Trainer(
         network=network,
@@ -76,11 +99,7 @@ def main(opt: Config):
     logging.info("Start training...")
     # Build optimizer and criterion
     optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
-    lr_scheduler = None
-    if opt.learning_rate_step_size is not None:
-        lr_scheduler = optim.lr_scheduler.StepLR(
-            optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma
-        )
+    lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma)
 
     ckpt_callback = CheckpointsCallback(
         checkpoint_dir=weight_dir,
@@ -103,7 +122,7 @@ def arg_parser():
 
 if __name__ == "__main__":
     args = arg_parser()
-    opt: Config = get_options(args.config)
+    opt = get_options(args.config)
     if opt.resume and opt.opt_path is not None:
         resume = opt.resume
         resume_path = opt.resume_path

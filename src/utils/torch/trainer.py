@@ -24,6 +24,8 @@ class TorchTrainer(ABC, nn.Module):
     def __init__(self, log_dir: str = "logs"):
         super().__init__()
         self.log_dir = log_dir
+        self.global_step = 1
+        self.start_epoch = 1
 
     def predict(self, inputs: Union[torch.Tensor, Dict, List]) -> Union[torch.Tensor, Dict, List]:
         """
@@ -209,6 +211,39 @@ class TorchTrainer(ABC, nn.Module):
         """
         self.network.load_state_dict(torch.load(path), map_location=device)
 
+    def save_all_states(self, path: str, global_epoch: int, global_step: int):
+        checkpoint = {
+            "epoch": global_epoch,
+            "global_step": global_step,
+            "state_dict_network": self.network.state_dict(),
+            "state_optimizer": self.optimizer.state_dict(),
+        }
+        if self.scheduler is not None:
+            checkpoint["state_lr_scheduler"] = self.scheduler.state_dict()
+
+        ckpt_path = os.path.join(path, "checkpoint_{}_{}.pt".format(global_epoch, global_step))
+        torch.save(checkpoint, ckpt_path)
+        return ckpt_path
+
+    def load_all_states(self, path: str, device: str = "cpu"):
+        dict_checkpoint = torch.load(os.path.join(path), map_location=device)
+
+        self.start_epoch = dict_checkpoint["epoch"]
+        self.global_step = dict_checkpoint["global_step"]
+        self.network.load_state_dict(dict_checkpoint["state_dict_network"])
+        self.optimizer.load_state_dict(dict_checkpoint["state_optimizer"])
+        if self.scheduler is not None:
+            self.scheduler.load_state_dict(dict_checkpoint["state_lr_scheduler"])
+
+        logging.info("Successfully loaded checkpoint from {}".format(path))
+        logging.info("Resume training from epoch {}".format(self.start_epoch))
+
+    def set_start_epoch(self, start_epoch: int):
+        self.start_epoch = start_epoch
+
+    def set_global_step(self, global_step: int):
+        self.global_step = global_step
+
     def compile(
         self,
         optimizer: Union[str, torch.optim.Optimizer] = "sgd",
@@ -284,14 +319,25 @@ class TorchTrainer(ABC, nn.Module):
         logger.addHandler(logging.StreamHandler())
 
         mlflow.set_tracking_uri(uri=f'file://{os.path.abspath(os.path.join(self.log_dir, "mlruns"))}')
-        global_step = 0
+        global_step = self.global_step
         # Start training
         with mlflow.start_run():
-            for epoch in range(1, epochs + 1):
+            for epoch in range(self.start_epoch, epochs + 1):
                 logger.info(f"Epoch {epoch}/{epochs}")
                 global_step = self.train_epoch(global_step, epoch, train_data, eval_data, logger, callbacks=callbacks)
+                self.lr_scheduler(global_step, epoch)
                 if test_data is not None:
                     self.evaluate(test_data)
+
+    def lr_scheduler(self, step: int, epoch: int) -> None:
+        """Learning rate scheduler.
+
+        Args:
+            step (int): Current step.
+            epoch (int): Current epoch.
+        """
+        if self.scheduler is not None:
+            self.scheduler.step()
 
     @abstractmethod
     def train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:

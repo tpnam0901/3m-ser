@@ -8,10 +8,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
-from torchvggish import vggish
 from transformers import BertConfig, BertModel, RobertaConfig, RobertaModel
 
+from configs.base import Config
+from torchvggish import vggish
+
 from .audioset_tagging_cnn.pytorch.models import Wavegram_Logmel_Cnn14 as Wavegram_Logmel_Cnn14_Base
+from .feature_extraction import get_feature_extractor
 
 
 def build_bert_encoder() -> nn.Module:
@@ -38,10 +41,12 @@ class VGGish(nn.Module):
         for i in range(x.size(0)):
             out.append(self.vggish(x[i]))
         x = torch.stack(out, axis=0)
+        if len(x.size()) == 2:
+            x = x.unsqueeze(1)
         return x
 
 
-def build_vggish_encoder() -> nn.Module:
+def build_vggish_encoder(opt: Config) -> nn.Module:
     """A function to build vggish encoder"""
     return VGGish()
 
@@ -101,7 +106,8 @@ class Wavegram_Logmel_Cnn14(Wavegram_Logmel_Cnn14_Base):
         return embedding
 
 
-def build_panns_encoder(type: str = "Wavegram_Logmel_Cnn14") -> nn.Module:
+def build_panns_encoder(opt: Config) -> nn.Module:
+    type = "Wavegram_Logmel_Cnn14"
     """A function to build panns encoder"""
     panns = {
         "Wavegram_Logmel_Cnn14": Wavegram_Logmel_Cnn14,
@@ -152,7 +158,7 @@ class HuBertBase(nn.Module):
         return features
 
 
-def build_hubert_base_encoder() -> nn.Module:
+def build_hubert_base_encoder(opt: Config) -> nn.Module:
     """A function to build hubert encoder"""
     return HuBertBase()
 
@@ -168,7 +174,7 @@ class Wav2Vec2Base(nn.Module):
         return features
 
 
-def build_wav2vec2_base_encoder() -> nn.Module:
+def build_wav2vec2_base_encoder(opt: Config) -> nn.Module:
     return Wav2Vec2Base()
 
 
@@ -183,28 +189,119 @@ class WavlmBase(nn.Module):
         return features
 
 
-def build_wavlm_base_encoder() -> nn.Module:
+def build_wavlm_base_encoder(opt: Config) -> nn.Module:
     return WavlmBase()
 
 
-def build_audio_encoder(type: str = "vggish") -> nn.Module:
+class LSTM(nn.Module):
+    def __init__(self, feature_module, input_size=512, hidden_size=512, num_layers=2, **kwargs):
+        super(LSTM, self).__init__(**kwargs)
+        self.feature_module = feature_module
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+
+    def forward(self, x):
+        x, lengths = self.feature_module(x, None)  # (samples, length)
+        x, _ = self.lstm(x)
+        # take only the last output
+        x = x[:, -1, :]
+        return x
+
+
+class LSTM_Mel(nn.Module):
+    def __init__(self, feature_module, input_size=512, hidden_size=512, num_layers=2, **kwargs):
+        super(LSTM_Mel, self).__init__(**kwargs)
+        self.feature_module = feature_module
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+
+    def forward(self, audio):
+        out = []
+        for i in range(audio.size(0)):
+            out_dim1 = []
+            for j in range(audio.size(1)):
+                x = self.feature_module(audio[i, j : j + 1, :])
+                x = torch.transpose(x, 1, 3)
+                x = x.reshape(x.size(0), -1, x.size(3))
+                x = x.mean(dim=1)
+                x = x.squeeze(0)
+                out_dim1.append(x)
+            out.append(torch.stack(out_dim1, axis=0))
+        out = torch.stack(out, axis=0)
+
+        x, _ = self.lstm(out)
+        # take only the last output
+        x = x[:, -1, :]
+        return x
+
+
+def build_lstm_encoder(opt: Config) -> nn.Module:
+    weights = "feature_extractor_wav2vec_base.pth"
+    url = "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/wav2vec_base/feature_extractor_wav2vec_base.pth"
+
+    extractor_mode = "group_norm"
+    extractor_conv_layer_config = [(512, 10, 5), (512, 3, 2), (512, 3, 2), (512, 3, 2), (512, 3, 2), (512, 2, 2), (512, 2, 2)]
+    extractor_conv_bias = False
+    feature_extractor = get_feature_extractor(extractor_mode, extractor_conv_layer_config, extractor_conv_bias)
+
+    if not os.path.exists(os.path.join("/tmp/{}".format(weights))):
+        os.system("wget {} -O /tmp/{}".format(url, weights))
+
+    feature_extractor.to("cpu")
+    state_dict = torch.load(os.path.join("/tmp/{}".format(weights)), map_location="cpu")
+    feature_extractor.load_state_dict(state_dict)
+
+    model = LSTM(feature_extractor, input_size=512, hidden_size=opt.lstm_hidden_size, num_layers=opt.lstm_num_layers)
+
+    return model
+
+
+def build_lstm_mel_encoder(opt: Config) -> nn.Module:
+    weights = "vggish_feature_extractor.pth"
+    url = "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/wav2vec_base/feature_extractor_wav2vec_base.pth"
+
+    layers = []
+    in_channels = 1
+    for v in [64, "M", 128, "M", 256, 256, "M", 512, 512, "M"]:
+        if v == "M":
+            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        else:
+            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            layers += [conv2d, nn.ReLU(inplace=True)]
+            in_channels = v
+
+    if not os.path.exists(os.path.join("/tmp/{}".format(weights))):
+        os.system("wget {} -O /tmp/{}".format(url, weights))
+    feature_extractor = nn.Sequential(*layers)
+    feature_extractor.to("cpu")
+    state_dict = torch.load(os.path.join("/tmp/{}".format(weights)), map_location="cpu")
+    feature_extractor.load_state_dict(state_dict)
+
+    model = LSTM_Mel(feature_extractor, input_size=512, hidden_size=opt.lstm_hidden_size, num_layers=opt.lstm_num_layers)
+
+    return model
+
+
+def build_audio_encoder(opt: Config) -> nn.Module:
     """A function to build audio encoder
 
     Args:
-        type (str, optional): Type of audio encoder. Defaults to "vggish".
+        opt (Config): Config object
 
     Returns:
         nn.Module: Audio encoder
     """
+    type = opt.audio_encoder_type
+
     encoders = {
         "vggish": build_vggish_encoder,
         "panns": build_panns_encoder,
         "hubert_base": build_hubert_base_encoder,
         "wav2vec2_base": build_wav2vec2_base_encoder,
         "wavlm_base": build_wavlm_base_encoder,
+        "lstm": build_lstm_encoder,
+        "lstm_mel": build_lstm_mel_encoder,
     }
     assert type in encoders.keys(), f"Invalid audio encoder type: {type}"
-    return encoders[type]()
+    return encoders[type](opt)
 
 
 def build_text_encoder(type: str = "bert") -> nn.Module:
