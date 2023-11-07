@@ -7,13 +7,6 @@
 
 * upgrade to version 1.0
 
-### Miscellaneous Chores
-
-* increase major ([bc88c36](https://github.com/namphuongtran9196/3m-ser/commit/bc88c361e8d92323fba6883396a12fbd4ed7766c))
-
-## [0.2.0](https://github.com/namphuongtran9196/3m-ser/compare/v0.1.0...v0.2.0) (2023-11-07)
-
-
 ### Features
 
 * add audio augmentation for panns ([3c25ad9](https://github.com/namphuongtran9196/3m-ser/commit/3c25ad932341d50390447a3e57e7476b9bb54207))
