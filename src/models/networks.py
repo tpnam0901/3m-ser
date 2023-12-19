@@ -38,7 +38,12 @@ class AudioOnly_v2(nn.Module):
 
         self.fusion_head_output_type = opt.fusion_head_output_type
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
         # Audio processing
         audio_embeddings = self.audio_encoder(audio)
 
@@ -94,7 +99,12 @@ class TextOnly_v2(nn.Module):
         self.linear = nn.Linear(opt.text_encoder_dim, opt.linear_layer_last_dim)
         self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).pooler_output
         # Classification head
@@ -133,13 +143,19 @@ class MMSERA_v2(nn.Module):
 
         # Fusion module
         self.text_attention = nn.MultiheadAttention(
-            embed_dim=opt.text_encoder_dim, num_heads=opt.num_attention_head, dropout=opt.dropout, batch_first=True
+            embed_dim=opt.text_encoder_dim,
+            num_heads=opt.num_attention_head,
+            dropout=opt.dropout,
+            batch_first=True,
         )
         self.text_linear = nn.Linear(opt.text_encoder_dim, opt.audio_encoder_dim)
         self.text_layer_norm = nn.LayerNorm(opt.audio_encoder_dim)
 
         self.fusion_attention = nn.MultiheadAttention(
-            embed_dim=opt.audio_encoder_dim, num_heads=opt.num_attention_head, dropout=opt.dropout, batch_first=True
+            embed_dim=opt.audio_encoder_dim,
+            num_heads=opt.num_attention_head,
+            dropout=opt.dropout,
+            batch_first=True,
         )
         self.fusion_linear = nn.Linear(opt.audio_encoder_dim, opt.audio_encoder_dim)
         self.fusion_layer_norm = nn.LayerNorm(opt.audio_encoder_dim)
@@ -158,7 +174,12 @@ class MMSERA_v2(nn.Module):
 
         self.fusion_head_output_type = opt.fusion_head_output_type
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).last_hidden_state
 
@@ -168,12 +189,17 @@ class MMSERA_v2(nn.Module):
             audio_embeddings = self.audio_encoder_layer_norm(audio_embeddings)
         elif self.audio_norm_type == "min_max":
             # Min-max normalization
-            audio_embeddings = (audio_embeddings - audio_embeddings.min()) / (audio_embeddings.max() - audio_embeddings.min())
+            audio_embeddings = (audio_embeddings - audio_embeddings.min()) / (
+                audio_embeddings.max() - audio_embeddings.min()
+            )
 
         ## Fusion Module
         # Self-attention to reduce the dimensionality of the text embeddings
         text_attention, text_attn_output_weights = self.text_attention(
-            text_embeddings, text_embeddings, text_embeddings, average_attn_weights=False
+            text_embeddings,
+            text_embeddings,
+            text_embeddings,
+            average_attn_weights=False,
         )
         text_linear = self.text_linear(text_attention)
         text_norm = self.text_layer_norm(text_linear)
@@ -183,7 +209,10 @@ class MMSERA_v2(nn.Module):
 
         # Selt-attention module
         fusion_attention, fusion_attn_output_weights = self.fusion_attention(
-            fusion_embeddings, fusion_embeddings, fusion_embeddings, average_attn_weights=False
+            fusion_embeddings,
+            fusion_embeddings,
+            fusion_embeddings,
+            average_attn_weights=False,
         )
         fusion_linear = self.fusion_linear(fusion_attention)
         fusion_norm = self.fusion_layer_norm(fusion_linear)
@@ -207,9 +236,12 @@ class MMSERA_v2(nn.Module):
         out = self.classifer(x)
 
         if output_attentions:
-            return [out, cls_token_final_fusion_norm], [text_attn_output_weights, fusion_attn_output_weights]
+            return [out, cls_token_final_fusion_norm], [
+                text_attn_output_weights,
+                fusion_attn_output_weights,
+            ]
 
-        return out, cls_token_final_fusion_norm, text_norm.mean(dim=1), audio_embeddings.mean(dim=1)
+        return out, cls_token_final_fusion_norm, text_norm, audio_embeddings
 
 
 class SERVER_v2(nn.Module):
@@ -247,7 +279,12 @@ class SERVER_v2(nn.Module):
         self.linear2 = nn.Linear(256, 64)
         self.classifer = nn.Linear(64, opt.num_classes)
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).pooler_output
         text_embeddings = self.linear1(text_embeddings)

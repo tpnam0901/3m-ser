@@ -11,7 +11,9 @@ from torch.nn.functional import linear, normalize
 class CrossEntropyLoss(CELoss):
     """Rewrite CrossEntropyLoss to support init with kwargs"""
 
-    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0, **kwargs):
+    def __init__(
+        self, feat_dim: int, num_classes: int, lambda_c: float = 1.0, **kwargs
+    ):
         super(CrossEntropyLoss, self).__init__(**kwargs)
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -53,7 +55,12 @@ class ContrastiveCenterLoss(nn.Module):
         intra_distances = distances_same.sum()
         inter_distances = distance_centers.sum().sub(intra_distances)
         epsilon = 1e-6
-        loss = (self.lambda_c / 2.0 / batch_size) * intra_distances / (inter_distances + epsilon) / 0.1
+        loss = (
+            (self.lambda_c / 2.0 / batch_size)
+            * intra_distances
+            / (inter_distances + epsilon)
+            / 0.1
+        )
 
         return loss
 
@@ -74,6 +81,26 @@ class CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
         return total_loss
 
 
+class CrossEntropyLoss_ContrastiveCenterLoss_AdjustTextAudio(nn.Module):
+    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0):
+        super(CrossEntropyLoss_ContrastiveCenterLoss_AdjustTextAudio, self).__init__()
+        self.cc_loss = ContrastiveCenterLoss(feat_dim, num_classes, lambda_c)
+        self.ce_loss = CELoss()
+
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+        logits = feat[0]
+        feat_fusion = feat[1]
+        feat_text = feat[2]
+        feat_audio = feat[3]
+
+        ce_loss = self.ce_loss(logits, label)
+        cc_loss = self.cc_loss(feat_fusion, label)
+        c_text_loss = self.cc_loss(feat_text, label)
+        c_audio_loss = self.cc_loss(feat_audio, label)
+        total_loss = ce_loss + cc_loss + c_text_loss + c_audio_loss
+        return total_loss
+
+
 class CrossEntropyLoss_CenterLoss(nn.Module):
     def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0):
         super(CrossEntropyLoss_CenterLoss, self).__init__()
@@ -87,6 +114,26 @@ class CrossEntropyLoss_CenterLoss(nn.Module):
         ce_loss = self.ce_loss(logits, label)
         c_loss = self.c_loss(feat_fusion, label)
         total_loss = ce_loss + c_loss
+        return total_loss
+
+
+class CrossEntropyLoss_CenterLoss_AdjustTextAudio(nn.Module):
+    def __init__(self, feat_dim: int, num_classes: int, lambda_c: float = 1.0):
+        super(CrossEntropyLoss_CenterLoss_AdjustTextAudio, self).__init__()
+        self.c_loss = CenterLoss(feat_dim, num_classes, lambda_c)
+        self.ce_loss = CELoss()
+
+    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+        logits = feat[0]
+        feat_fusion = feat[1]
+        feat_text = feat[2]
+        feat_audio = feat[3]
+
+        ce_loss = self.ce_loss(logits, label)
+        c_loss = self.c_loss(feat_fusion, label)
+        c_text_loss = self.c_loss(feat_text, label)
+        c_audio_loss = self.c_loss(feat_audio, label)
+        total_loss = ce_loss + c_loss + c_text_loss + c_audio_loss
         return total_loss
 
 
@@ -132,7 +179,9 @@ class CombinedMarginLoss(nn.Module):
         self.m2 = m2
         self.m3 = m3
 
-        self.weight = torch.nn.Parameter(torch.normal(0, 0.01, (out_features, in_features)))
+        self.weight = torch.nn.Parameter(
+            torch.normal(0, 0.01, (out_features, in_features))
+        )
 
         # For ArcFace
         self.cos_m = math.cos(self.m2)
@@ -159,7 +208,9 @@ class CombinedMarginLoss(nn.Module):
                 target_logit.arccos_()
                 logits.arccos_()
                 final_target_logit = target_logit + self.m2
-                logits[index_positive, labels[index_positive].view(-1)] = final_target_logit
+                logits[
+                    index_positive, labels[index_positive].view(-1)
+                ] = final_target_logit
                 logits.cos_()
             logits = logits * self.s
 
@@ -175,7 +226,9 @@ class CombinedMarginLoss(nn.Module):
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma: float = 0.0, alpha: float = None, size_average: bool = True):
+    def __init__(
+        self, gamma: float = 0.0, alpha: float = None, size_average: bool = True
+    ):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.alpha = alpha
