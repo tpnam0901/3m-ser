@@ -13,10 +13,10 @@ import numpy as np
 import torch
 from torch import nn, optim
 
+import trainer as Trainer
 from configs.base import Config
 from data.dataloader import build_train_test_dataset
 from models import losses, networks
-from trainer import Trainer
 from utils.configs import get_options
 from utils.torch.callbacks import CheckpointsCallback
 
@@ -28,71 +28,77 @@ torch.cuda.manual_seed_all(SEED)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main(opt: Config):
+def main(cfg: Config):
     logging.info("Initializing model...")
     # Model
     try:
-        network = getattr(networks, opt.model_type)(opt)
+        network = getattr(networks, cfg.model_type)(cfg)
         network.to(device)
     except AttributeError:
-        raise NotImplementedError("Model {} is not implemented".format(opt.model_type))
+        raise NotImplementedError("Model {} is not implemented".format(cfg.model_type))
 
     logging.info("Initializing checkpoint directory and dataset...")
     # Preapre the checkpoint directory
-    opt.checkpoint_dir = checkpoint_dir = os.path.join(
-        os.path.abspath(opt.checkpoint_dir),
-        opt.name,
+    cfg.checkpoint_dir = checkpoint_dir = os.path.join(
+        os.path.abspath(cfg.checkpoint_dir),
+        cfg.name,
         datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),
     )
     log_dir = os.path.join(checkpoint_dir, "logs")
     weight_dir = os.path.join(checkpoint_dir, "weights")
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(weight_dir, exist_ok=True)
-    opt.save(opt)
+    cfg.save(cfg)
 
     # Build dataset
-    train_ds, test_ds = build_train_test_dataset(opt)
+    train_ds, test_ds = build_train_test_dataset(cfg)
 
     logging.info("Initializing trainer...")
-    if opt.loss_type == "FocalLoss":
-        criterion = losses.FocalLoss(gamma=opt.focal_loss_gamma, alpha=opt.focal_loss_alpha)
+    try:
+        criterion = getattr(losses, cfg.loss_type)(cfg)
         criterion.to(device)
-    else:
-        try:
-            criterion = getattr(losses, opt.loss_type)(
-                feat_dim=opt.feat_dim,
-                num_classes=opt.num_classes,
-                lambda_c=opt.lambda_c,
-            )
-            criterion.to(device)
-        except AttributeError:
-            raise NotImplementedError("Loss {} is not implemented".format(opt.loss_type))
+    except AttributeError:
+        raise NotImplementedError("Loss {} is not implemented".format(cfg.loss_type))
+    try:
+        trainer = getattr(Trainer, cfg.trainer)(
+            cfg=cfg,
+            network=network,
+            criterion=criterion,
+            log_dir=cfg.checkpoint_dir,
+        )
+    except AttributeError:
+        raise NotImplementedError("Trainer {} is not implemented".format(cfg.trainer))
 
-    trainer = Trainer(
-        network=network,
-        criterion=criterion,
-        log_dir=opt.checkpoint_dir,
-    )
     logging.info("Start training...")
+
     # Build optimizer and criterion
-    optimizer = optim.Adam(params=trainer.network.parameters(), lr=opt.learning_rate)
+    optimizer = optim.Adam(
+        params=trainer.network.parameters(),
+        lr=cfg.learning_rate,
+        betas=(cfg.adam_beta_1, cfg.adam_beta_2),
+        eps=cfg.adam_eps,
+        weight_decay=cfg.adam_weight_decay,
+    )
+
     lr_scheduler = None
-    if opt.learning_rate_step_size is not None:
+    if cfg.learning_rate_step_size is not None:
         lr_scheduler = optim.lr_scheduler.StepLR(
-            optimizer, step_size=opt.learning_rate_step_size, gamma=opt.learning_rate_gamma
+            optimizer,
+            step_size=cfg.learning_rate_step_size,
+            gamma=cfg.learning_rate_gamma,
         )
 
     ckpt_callback = CheckpointsCallback(
         checkpoint_dir=weight_dir,
-        save_freq=opt.save_freq,
-        max_to_keep=opt.max_to_keep,
-        save_best_val=opt.save_best_val,
-        save_all_states=opt.save_all_states,
+        save_freq=cfg.save_freq,
+        max_to_keep=cfg.max_to_keep,
+        save_best_val=cfg.save_best_val,
+        save_all_states=cfg.save_all_states,
     )
     trainer.compile(optimizer=optimizer, scheduler=lr_scheduler)
-    if opt.resume:
-        trainer.load_all_states(opt.resume_path)
-    trainer.fit(train_ds, opt.num_epochs, test_ds, callbacks=[ckpt_callback])
+    if cfg.resume:
+        trainer.load_all_states(cfg.resume_path)
+    trainer.fit(train_ds, cfg.num_epochs, test_ds, callbacks=[ckpt_callback])
 
 
 def arg_parser():
@@ -103,12 +109,12 @@ def arg_parser():
 
 if __name__ == "__main__":
     args = arg_parser()
-    opt: Config = get_options(args.config)
-    if opt.resume and opt.opt_path is not None:
-        resume = opt.resume
-        resume_path = opt.resume_path
-        opt.load(opt.opt_path)
-        opt.resume = resume
-        opt.resume_path = resume_path
+    cfg: Config = get_options(args.config)
+    if cfg.resume and cfg.cfg_path is not None:
+        resume = cfg.resume
+        resume_path = cfg.resume_path
+        cfg.load(cfg.cfg_path)
+        cfg.resume = resume
+        cfg.resume_path = resume_path
 
-    main(opt)
+    main(cfg)

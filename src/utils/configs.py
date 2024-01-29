@@ -9,7 +9,7 @@ def get_options(
 ) -> BaseConfig:
     """Get arguments for training and evaluate
     Returns:
-        opt: ArgumentParser
+        cfg: ArgumentParser
     """
     # Import config from path
     spec = importlib.util.spec_from_file_location("config", path)

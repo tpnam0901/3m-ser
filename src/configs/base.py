@@ -26,20 +26,20 @@ class BaseConfig(Base):
         for key, value in self.__dict__.items():
             logging.info(f"{key}: {value}")
 
-    def save(self, opt: str):
+    def save(self, cfg: str):
         message = "\n"
-        for k, v in sorted(vars(opt).items()):
+        for k, v in sorted(vars(cfg).items()):
             message += f"{str(k):>30}: {str(v):<40}\n"
 
-        os.makedirs(os.path.join(opt.checkpoint_dir), exist_ok=True)
-        out_opt = os.path.join(opt.checkpoint_dir, "opt.log")
+        os.makedirs(os.path.join(cfg.checkpoint_dir), exist_ok=True)
+        out_opt = os.path.join(cfg.checkpoint_dir, "cfg.log")
         with open(out_opt, "w") as opt_file:
             opt_file.write(message)
             opt_file.write("\n")
 
         logging.info(message)
 
-    def load(self, opt_path: str):
+    def load(self, cfg_path: str):
         def decode_value(value: str):
             value = value.strip()
             if "." in value and value.replace(".", "").isdigit():
@@ -52,18 +52,26 @@ class BaseConfig(Base):
                 value = False
             elif value == "None":
                 value = None
-            elif value.startswith("'") and value.endswith("'") or value.startswith('"') and value.endswith('"'):
+            elif (
+                value.startswith("'")
+                and value.endswith("'")
+                or value.startswith('"')
+                and value.endswith('"')
+            ):
                 value = value[1:-1]
             return value
 
-        with open(opt_path, "r") as f:
+        with open(cfg_path, "r") as f:
             data = f.read().split("\n")
             # remove all empty strings
             data = list(filter(None, data))
             # convert to dict
             data_dict = {}
             for i in range(len(data)):
-                key, value = data[i].split(":")[0].strip(), data[i].split(":")[1].strip()
+                key, value = (
+                    data[i].split(":")[0].strip(),
+                    data[i].split(":")[1].strip(),
+                )
                 if value.startswith("[") and value.endswith("]"):
                     value = value[1:-1].split(",")
                     value = [decode_value(x) for x in value]
@@ -86,6 +94,7 @@ class Config(BaseConfig):
 
     def set_args(self, **kwargs):
         # Training settings
+        self.trainer = "Trainer"  # Trainer type use for training model [MSER_Trainer, Trainer, MarginTrainer]
         self.num_epochs: int = 250
         self.checkpoint_dir: str = "checkpoints"
         self.save_all_states: bool = True
@@ -98,12 +107,12 @@ class Config(BaseConfig):
         self.resume: bool = False
         # path to checkpoint.pt file, only available when using save_all_states = True in previous training
         self.resume_path: str = None
-        self.opt_path: str = None
+        self.cfg_path: str = None
         if self.resume:
             assert os.path.exists(self.resume_path), "Resume path not found"
 
         # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
-        #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
+        #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER, CrossEntropyLoss_CombinedMarginLoss]
         self.loss_type: str = "CrossEntropyLoss"
 
         # For CrossEntropyLoss_ContrastiveCenterLoss
@@ -119,15 +128,27 @@ class Config(BaseConfig):
         # For focal loss
         self.focal_loss_gamma: float = 0.5
         self.focal_loss_alpha: float = None
+        self.focal_loss_size_average: bool = True
 
         # Learning rate
         self.learning_rate: float = 0.0001
         self.learning_rate_step_size: int = 30
         self.learning_rate_gamma: float = 0.1
 
+        # Adam config
+        self.adam_beta_1 = 0.9
+        self.adam_beta_2 = 0.999
+        self.adam_eps = 1e-08
+        self.adam_weight_decay = 0
+
         # Dataset
-        self.data_name: str = "IEMOCAP"  # [IEMOCAP, ESD, MELD, IEMOCAPAudio]
+        self.data_name: str = (
+            "IEMOCAP"  # [IEMOCAP, ESD, MELD, IEMOCAPAudio, IEMOCAP_MSER]
+        )
         self.data_root: str = "data/IEMOCAP"  # folder contains train.pkl and test.pkl
+        self.data_valid: str = "val.pkl"  # change this to your validation subset name if you want to use validation dataset. If None, test.pkl will be use
+        self.num_workers = 0
+
         # use for training with batch size > 1
         self.text_max_length: int = 297
         self.audio_max_length: int = 546220
@@ -140,11 +161,14 @@ class Config(BaseConfig):
         self.text_encoder_type: str = "bert"  # [bert, roberta]
         self.text_encoder_dim: int = 768
         self.text_unfreeze: bool = False
-        self.audio_encoder_type: str = "panns"  # [vggish, panns, hubert_base, wav2vec2_base, wavlm_base, lstm]
+        self.audio_encoder_type: str = (
+            "panns"  # [vggish, panns, hubert_base, wav2vec2_base, wavlm_base, lstm]
+        )
         self.audio_encoder_dim: int = 2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base, 512 - lstm
         self.audio_norm_type: str = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze: bool = True
 
+        self.fusion_dim: int = 768
         self.fusion_head_output_type: str = "cls"  # [cls, mean, max]
 
         # For LSTM
