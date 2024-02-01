@@ -115,6 +115,10 @@ class Config(BaseConfig):
         #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER, CrossEntropyLoss_CombinedMarginLoss]
         self.loss_type: str = "CrossEntropyLoss"
 
+        # Lambda_1 * cross-entropy loss, lambda_2 * feature_loss
+        self.lambda_1 = 1.0
+        self.lambda_2 = 1.0
+
         # For CrossEntropyLoss_ContrastiveCenterLoss
         self.lambda_c: float = 1.0
         self.feat_dim: int = 768
@@ -158,6 +162,7 @@ class Config(BaseConfig):
         self.num_attention_head: int = 8
         self.dropout: float = 0.5
         self.model_type: str = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER]
+        self.encode_data: bool = True  # Whether to ingore the embedding part in model
         self.text_encoder_type: str = "bert"  # [bert, roberta]
         self.text_encoder_dim: int = 768
         self.text_unfreeze: bool = False
@@ -166,7 +171,7 @@ class Config(BaseConfig):
         )
         self.audio_encoder_dim: int = 2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base, 512 - lstm
         self.audio_norm_type: str = "layer_norm"  # [layer_norm, min_max, None]
-        self.audio_unfreeze: bool = True
+        self.audio_unfreeze: bool = False
 
         self.fusion_dim: int = 768
         self.fusion_head_output_type: str = "cls"  # [cls, mean, max]
@@ -184,6 +189,9 @@ class Config(BaseConfig):
         # Search for linear layer output dimension
         self.linear_layer_output: List = [256, 128]
         self.linear_layer_last_dim: int = 64
-
+        if self.encode_data:
+            assert (not self.text_unfreeze) and (
+                not self.audio_unfreeze
+            ), "Enabling encode_data require text_unfreeze and audio_unfreeze set to False"
         for key, value in kwargs.items():
             setattr(self, key, value)

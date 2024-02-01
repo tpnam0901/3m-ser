@@ -51,7 +51,11 @@ def main(cfg: Config):
     cfg.save(cfg)
 
     # Build dataset
-    train_ds, test_ds = build_train_test_dataset(cfg)
+    encoder_model = None
+    if cfg.encode_data:
+        network.embed_input = True
+        encoder_model = network
+    train_ds, test_ds = build_train_test_dataset(cfg, encoder_model)
 
     logging.info("Initializing trainer...")
     try:

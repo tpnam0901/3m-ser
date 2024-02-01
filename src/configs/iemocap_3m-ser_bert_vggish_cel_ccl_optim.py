@@ -11,13 +11,17 @@ class Config(BaseConfig):
 
     def add_args(self, **kwargs):
         self.batch_size = 1
-        self.num_epochs = 200
+        self.num_epochs = 100
 
         # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
         #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
-        self.loss_type = "FocalLoss"
+        self.loss_type = "CrossEntropyLoss_ContrastiveCenterLoss"
 
         self.checkpoint_dir = "checkpoints_latest/IEMOCAP/3M-SER_losses"
+
+        # Sum loss
+        self.lambda_1 = 1.0
+        self.lambda_2 = 1.0
 
         # For contrastive-center loss
         self.lambda_c = 1.0
@@ -25,7 +29,7 @@ class Config(BaseConfig):
 
         # For combined margin loss
         self.margin_loss_m1 = 1.0
-        self.margin_loss_m2 = 1.0
+        self.margin_loss_m2 = 0.5
         self.margin_loss_m3 = 0.0
         self.margin_loss_scale = 64.0
 
@@ -33,8 +37,8 @@ class Config(BaseConfig):
         self.focal_loss_gamma = 0.5
         self.focal_loss_alpha = None
 
-        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER,  ]
-        self.trainer = "Trainer"
+        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER]
+        self.trainer = "MarginTrainer"
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
@@ -63,6 +67,13 @@ class Config(BaseConfig):
         # Config name
         self.name = f"{self.loss_type}_{self.text_encoder_type}_{self.audio_encoder_type}_{self.fusion_head_output_type}"
         # self.name = f"{self.fusion_head_output_type}_{self.text_encoder_type}_{self.audio_encoder_type}"
+
+        # Hyperparameter search
+        self.lambda_1 = [x / 10 for x in range(1, 10, 1)]
+        self.lambda_2 = [x / 10 for x in range(1, 10, 1)]
+
+        self.optim_attributes = ["lambda_1", "lambda_2"]
+        self.name = "Optim_{}".format(self.name)
 
         for key, value in kwargs.items():
             setattr(self, key, value)

@@ -29,15 +29,15 @@ class Trainer(TorchTrainer):
         self.optimizer.zero_grad()
 
         # Prepare batch
-        input_ids, audio, label = batch
+        input_text, input_audio, label = batch
 
         # Move inputs to cpu or gpu
-        audio = audio.to(self.device)
+        input_audio = input_audio.to(self.device)
         label = label.to(self.device)
-        input_ids = input_ids.to(self.device)
+        input_text = input_text.to(self.device)
 
         # Forward pass
-        output = self.network(input_ids, audio)
+        output = self.network(input_text, input_audio)
         loss = self.criterion(output, label)
 
         # Backward pass
@@ -55,15 +55,15 @@ class Trainer(TorchTrainer):
     def test_step(self, batch: Dict[str, Tensor]) -> Dict[str, Tensor]:
         self.network.eval()
         # Prepare batch
-        input_ids, audio, label = batch
+        input_text, input_audio, label = batch
 
         # Move inputs to cpu or gpu
-        audio = audio.to(self.device)
+        input_audio = input_audio.to(self.device)
         label = label.to(self.device)
-        input_ids = input_ids.to(self.device)
+        input_text = input_text.to(self.device)
         with torch.no_grad():
             # Forward pass
-            output = self.network(input_ids, audio)
+            output = self.network(input_text, input_audio)
             loss = self.criterion(output, label)
             # Calculate accuracy
             _, preds = torch.max(output[0], 1)
@@ -111,15 +111,15 @@ class MarginTrainer(TorchTrainer):
         self.opt_criterion.zero_grad()
 
         # Prepare batch
-        input_ids, audio, label = batch
+        input_text, input_audio, label = batch
 
         # Move inputs to cpu or gpu
-        audio = audio.to(self.device)
+        input_audio = input_audio.to(self.device)
         label = label.to(self.device)
-        input_ids = input_ids.to(self.device)
+        input_text = input_text.to(self.device)
 
         # Forward pass
-        output = self.network(input_ids, audio)
+        output = self.network(input_text, input_audio)
         loss, logits = self.criterion(output, label)
 
         # Backward pass
@@ -138,15 +138,15 @@ class MarginTrainer(TorchTrainer):
     def test_step(self, batch: Dict[str, Tensor]) -> Dict[str, Tensor]:
         self.network.eval()
         # Prepare batch
-        input_ids, audio, label = batch
+        input_text, input_audio, label = batch
 
         # Move inputs to cpu or gpu
-        audio = audio.to(self.device)
+        input_audio = input_audio.to(self.device)
         label = label.to(self.device)
-        input_ids = input_ids.to(self.device)
+        input_text = input_text.to(self.device)
         with torch.no_grad():
             # Forward pass
-            output = self.network(input_ids, audio)
+            output = self.network(input_text, input_audio)
             loss, logits = self.criterion(output, label)
             # Calculate accuracy
             _, preds = torch.max(logits, 1)

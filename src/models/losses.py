@@ -70,6 +70,8 @@ class CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
         super(CrossEntropyLoss_ContrastiveCenterLoss, self).__init__()
         self.cc_loss = ContrastiveCenterLoss(cfg)
         self.ce_loss = CELoss()
+        self.lambda_1 = cfg.lambda_1
+        self.lambda_2 = cfg.lambda_2
 
     def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         logits = feat[0]
@@ -77,13 +79,13 @@ class CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
 
         ce_loss = self.ce_loss(logits, label)
         cc_loss = self.cc_loss(feat_fusion, label)
-        total_loss = ce_loss + cc_loss
+        total_loss = self.lambda_1 * ce_loss + self.lambda_2 * cc_loss
         return total_loss, logits
 
 
 class Weighted_CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
     def __init__(self, cfg: Config):
-        super(CrossEntropyLoss_ContrastiveCenterLoss, self).__init__()
+        super(Weighted_CrossEntropyLoss_ContrastiveCenterLoss, self).__init__()
         self.cc_loss = ContrastiveCenterLoss(cfg)
         self.ce_loss = CELoss()
         self.alpha_1 = nn.Parameter(torch.ones(1) * 0.5)
@@ -99,31 +101,13 @@ class Weighted_CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
         return total_loss, logits
 
 
-class CrossEntropyLoss_ContrastiveCenterLoss_AdjustTextAudio(nn.Module):
-    def __init__(self, cfg: Config):
-        super(CrossEntropyLoss_ContrastiveCenterLoss_AdjustTextAudio, self).__init__()
-        self.cc_loss = ContrastiveCenterLoss(cfg)
-        self.ce_loss = CELoss()
-
-    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-        logits = feat[0]
-        feat_fusion = feat[1]
-        feat_text = feat[2]
-        feat_audio = feat[3]
-
-        ce_loss = self.ce_loss(logits, label)
-        cc_loss = self.cc_loss(feat_fusion, label)
-        c_text_loss = self.cc_loss(feat_text, label)
-        c_audio_loss = self.cc_loss(feat_audio, label)
-        total_loss = ce_loss + cc_loss + c_text_loss + c_audio_loss
-        return total_loss
-
-
 class CrossEntropyLoss_CenterLoss(nn.Module):
     def __init__(self, cfg: Config):
         super(CrossEntropyLoss_CenterLoss, self).__init__()
         self.c_loss = CenterLoss(cfg)
         self.ce_loss = CELoss()
+        self.lambda_1 = cfg.lambda_1
+        self.lambda_2 = cfg.lambda_2
 
     def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         logits = feat[0]
@@ -131,28 +115,8 @@ class CrossEntropyLoss_CenterLoss(nn.Module):
 
         ce_loss = self.ce_loss(logits, label)
         c_loss = self.c_loss(feat_fusion, label)
-        total_loss = ce_loss + c_loss
+        total_loss = self.lambda_1 * ce_loss + self.lambda_2 * c_loss
         return total_loss, logits
-
-
-class CrossEntropyLoss_CenterLoss_AdjustTextAudio(nn.Module):
-    def __init__(self, cfg: Config):
-        super(CrossEntropyLoss_CenterLoss_AdjustTextAudio, self).__init__()
-        self.c_loss = CenterLoss(cfg)
-        self.ce_loss = CELoss()
-
-    def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-        logits = feat[0]
-        feat_fusion = feat[1]
-        feat_text = feat[2]
-        feat_audio = feat[3]
-
-        ce_loss = self.ce_loss(logits, label)
-        c_loss = self.c_loss(feat_fusion, label)
-        c_text_loss = self.c_loss(feat_text, label)
-        c_audio_loss = self.c_loss(feat_audio, label)
-        total_loss = ce_loss + c_loss + c_text_loss + c_audio_loss
-        return total_loss
 
 
 class ContrastiveCenterLossSER(ContrastiveCenterLoss):
@@ -235,6 +199,8 @@ class CrossEntropyLoss_CombinedMarginLoss(nn.Module):
         super(CrossEntropyLoss_CombinedMarginLoss, self).__init__()
         self.cml_loss = CombinedMarginLoss(cfg)
         self.ce_loss = CELoss()
+        self.lambda_1 = cfg.lambda_1
+        self.lambda_2 = cfg.lambda_2
 
     def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         logits = feat[0]
@@ -242,7 +208,7 @@ class CrossEntropyLoss_CombinedMarginLoss(nn.Module):
 
         ce_loss = self.ce_loss(logits, label)
         cml_loss = self.cml_loss(feat_fusion, label)[0]
-        total_loss = ce_loss + cml_loss
+        total_loss = self.lambda_1 * ce_loss + self.lambda_2 + cml_loss
         return total_loss, logits
 
 

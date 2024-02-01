@@ -179,23 +179,26 @@ class MMSERA(nn.Module):
         self.classifer = nn.Linear(previous_dim, cfg.num_classes)
 
         self.fusion_head_output_type = cfg.fusion_head_output_type
+        self.embed_input = False
 
     def forward(
         self,
-        input_ids: torch.Tensor,
-        audio: torch.Tensor,
+        input_text: torch.Tensor,
+        input_audio: torch.Tensor,
         output_attentions: bool = False,
     ):
-        # Text processing
-        text_embeddings = self.text_encoder(input_ids).last_hidden_state
+        if not self.embed_input:
+            text_embeddings = self.text_encoder(input_text).last_hidden_state
+            audio_embeddings = self.audio_encoder(input_audio)
+        else:
+            text_embeddings = input_text
+            audio_embeddings = input_audio
 
-        # Audio processing
-        audio_embeddings = self.audio_encoder(audio)
         if self.audio_norm_type == "layer_norm":
-            audio_embeddings = self.audio_encoder_layer_norm(audio_embeddings)
+            audio_embeddings_norm = self.audio_encoder_layer_norm(audio_embeddings)
         elif self.audio_norm_type == "min_max":
             # Min-max normalization
-            audio_embeddings = (audio_embeddings - audio_embeddings.min()) / (
+            audio_embeddings_norm = (audio_embeddings - audio_embeddings.min()) / (
                 audio_embeddings.max() - audio_embeddings.min()
             )
 
@@ -211,7 +214,7 @@ class MMSERA(nn.Module):
         text_norm = self.text_layer_norm(text_linear)
 
         # Concatenate the text and audio embeddings
-        fusion_embeddings = torch.cat((text_norm, audio_embeddings), 1)
+        fusion_embeddings = torch.cat((text_norm, audio_embeddings_norm), 1)
 
         # Selt-attention module
         fusion_attention, fusion_attn_output_weights = self.fusion_attention(
@@ -248,6 +251,12 @@ class MMSERA(nn.Module):
             ]
 
         return out, cls_token_final_fusion_norm, text_norm, audio_embeddings
+
+    def encode_audio(self, audio: torch.Tensor):
+        return self.audio_encoder(audio)
+
+    def encode_text(self, input_ids: torch.Tensor):
+        return self.text_encoder(input_ids).last_hidden_state
 
 
 class SERVER(nn.Module):

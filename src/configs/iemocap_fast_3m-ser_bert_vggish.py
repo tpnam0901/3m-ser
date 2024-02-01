@@ -13,11 +13,9 @@ class Config(BaseConfig):
         self.batch_size = 1
         self.num_epochs = 200
 
-        # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
-        #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
-        self.loss_type = "FocalLoss"
+        self.loss_type = "CrossEntropyLoss"
 
-        self.checkpoint_dir = "checkpoints_latest/IEMOCAP/3M-SER_losses"
+        self.checkpoint_dir = "checkpoints_latest/IEMOCAP/3M-SER"
 
         # For contrastive-center loss
         self.lambda_c = 1.0
@@ -25,7 +23,7 @@ class Config(BaseConfig):
 
         # For combined margin loss
         self.margin_loss_m1 = 1.0
-        self.margin_loss_m2 = 1.0
+        self.margin_loss_m2 = 0.5
         self.margin_loss_m3 = 0.0
         self.margin_loss_scale = 64.0
 
@@ -34,6 +32,7 @@ class Config(BaseConfig):
         self.focal_loss_alpha = None
 
         self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER,  ]
+        self.encode_data = True
         self.trainer = "Trainer"
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768

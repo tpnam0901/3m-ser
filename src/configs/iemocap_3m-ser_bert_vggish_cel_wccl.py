@@ -15,7 +15,7 @@ class Config(BaseConfig):
 
         # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
         #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
-        self.loss_type = "FocalLoss"
+        self.loss_type = "Weighted_CrossEntropyLoss_ContrastiveCenterLoss"
 
         self.checkpoint_dir = "checkpoints_latest/IEMOCAP/3M-SER_losses"
 
@@ -25,7 +25,7 @@ class Config(BaseConfig):
 
         # For combined margin loss
         self.margin_loss_m1 = 1.0
-        self.margin_loss_m2 = 1.0
+        self.margin_loss_m2 = 0.5
         self.margin_loss_m3 = 0.0
         self.margin_loss_scale = 64.0
 
@@ -33,8 +33,8 @@ class Config(BaseConfig):
         self.focal_loss_gamma = 0.5
         self.focal_loss_alpha = None
 
-        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER,  ]
-        self.trainer = "Trainer"
+        self.model_type = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER]
+        self.trainer = "MarginTrainer"
         self.text_encoder_type = "bert"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False

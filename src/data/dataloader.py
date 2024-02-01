@@ -2,8 +2,7 @@ import os
 import pickle
 import re
 from typing import Dict, List, Tuple, Union
-
-import librosa
+import logging
 import numpy as np
 import soundfile as sf
 import torch
@@ -18,8 +17,11 @@ from transformers import (
     Wav2Vec2Processor,
 )
 
+from models.networks import MMSERA
 from configs.base import Config
 from torchvggish.vggish_input import waveform_to_examples
+from tqdm.auto import tqdm
+import pickle
 
 
 class BaseDataset(Dataset):
@@ -32,6 +34,7 @@ class BaseDataset(Dataset):
         audio_max_length: int = 546220,
         text_max_length: int = 100,
         audio_encoder_type: str = "vggish",
+        encoder_model: MMSERA = None,
     ):
         """Dataset for IEMOCAP
 
@@ -40,6 +43,7 @@ class BaseDataset(Dataset):
             tokenizer (BertTokenizer, optional): Tokenizer for text. Defaults to BertTokenizer.from_pretrained("bert-base-uncased").
             audio_max_length (int, optional): The maximum length of audio. Defaults to 546220. None for no padding and truncation.
             text_max_length (int, optional): The maximum length of text. Defaults to 100. None for no padding and truncation.
+            encoder_model (MMSERA, optional): if want to pre-encoder dataset
         """
         super(BaseDataset, self).__init__()
         with open(path, "rb") as train_file:
@@ -48,12 +52,42 @@ class BaseDataset(Dataset):
         self.text_max_length = text_max_length
         self.tokenizer = tokenizer
         self.audio_encoder_type = audio_encoder_type
+        self.encoder_data = False
+        self.isFilled = False
+        self.encoder_model = encoder_model
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if encoder_model is not None:
+            self.encoder_data = True
+            self.data_list_encoder = [None for _ in self.data_list]
+            self.encoder_model.to(self.device)
+        self.count = 0
 
     def __getitem__(self, index: int) -> Dict[str, np.ndarray]:
+        if self.encoder_data and self.isFilled:
+            text_embedding, audio_embedding, label = self.data_list_encoder[index]
+
+            return text_embedding, audio_embedding, label
         audio_path, text, label = self.data_list[index]
         samples = self.__paudio__(audio_path)
         input_ids = self.__ptext__(text)
         label = self.__plabel__(label)
+
+        if self.encoder_data and not self.isFilled:
+            audio_embedding = self.encoder_model.encode_audio(
+                samples.unsqueeze(0).to(self.device)
+            ).squeeze(0)
+
+            text_embedding = self.encoder_model.encode_text(
+                input_ids.unsqueeze(0).to(self.device)
+            ).squeeze(0)
+            self.data_list_encoder[index] = (text_embedding, audio_embedding, label)
+
+            if None not in self.data_list_encoder:
+                self.isFilled = True
+                del self.encoder_model
+                del self.device
+
+            return text_embedding, audio_embedding, label
 
         return input_ids, samples, label
 
@@ -355,7 +389,7 @@ def build_mser_dataset(cfg: Config):
     return (train_loader, valid_loader)
 
 
-def build_train_test_dataset(cfg: Config):
+def build_train_test_dataset(cfg: Config, encoder_model: MMSERA = None):
     DATASET_MAP = {
         "IEMOCAP": BaseDataset,
         "IEMOCAPAudio": IEMOCAPAudioDataset,
@@ -390,14 +424,19 @@ def build_train_test_dataset(cfg: Config):
         audio_max_length = None
         text_max_length = None
 
-    training_data = dataset(
+    if encoder_model is not None:
+        encoder_model.train()
+    train_data = dataset(
         path=os.path.join(cfg.data_root, "train.pkl"),
         tokenizer=tokenizer,
         audio_max_length=audio_max_length,
         text_max_length=text_max_length,
         audio_encoder_type=cfg.audio_encoder_type,
+        encoder_model=encoder_model,
     )
 
+    if encoder_model is not None:
+        encoder_model.eval()
     test_set = cfg.data_valid if cfg.data_valid is not None else "test.pkl"
     test_data = dataset(
         path=os.path.join(cfg.data_root, test_set),
@@ -405,10 +444,11 @@ def build_train_test_dataset(cfg: Config):
         audio_max_length=None,
         text_max_length=None,
         audio_encoder_type=cfg.audio_encoder_type,
+        encoder_model=encoder_model,
     )
 
     train_dataloader = DataLoader(
-        training_data,
+        train_data,
         batch_size=cfg.batch_size,
         shuffle=True,
         num_workers=cfg.num_workers,
