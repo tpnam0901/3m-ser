@@ -11,7 +11,7 @@ class Config(BaseConfig):
 
     def add_args(self, **kwargs):
         self.batch_size = 1
-        self.num_epochs = 100
+        self.num_epochs = 200
 
         # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
         #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
@@ -58,7 +58,10 @@ class Config(BaseConfig):
         self.data_root: str = (
             "data/IEMOCAP_preprocessed"  # folder contains train.pkl and test.pkl
         )
-        self.data_valid: str = "val.pkl"  # change this to your validation subset name if you want to use validation dataset. If None, test.pkl will be use
+        self.data_valid: str = (
+            "val.pkl"  # change this to your validation subset name if you want to use validation dataset. If None, test.pkl will be use
+        )
+        self.encode_data: bool = False
 
         # use for training with batch size > 1
         self.text_max_length: int = 297
@@ -69,8 +72,8 @@ class Config(BaseConfig):
         # self.name = f"{self.fusion_head_output_type}_{self.text_encoder_type}_{self.audio_encoder_type}"
 
         # Hyperparameter search
-        self.lambda_1 = [x / 10 for x in range(1, 10, 1)]
-        self.lambda_2 = [x / 10 for x in range(1, 10, 1)]
+        self.lambda_1 = [0.5, 1.0, 1.5, 2.0]
+        self.lambda_2 = [0.5, 1.0, 1.5, 2.0]
 
         self.optim_attributes = ["lambda_1", "lambda_2"]
         self.name = "Optim_{}".format(self.name)

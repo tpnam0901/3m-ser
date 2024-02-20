@@ -95,7 +95,7 @@ class Config(BaseConfig):
     def set_args(self, **kwargs):
         # Training settings
         self.trainer = "Trainer"  # Trainer type use for training model [MSER_Trainer, Trainer, MarginTrainer]
-        self.num_epochs: int = 250
+        self.num_epochs: int = 200
         self.checkpoint_dir: str = "checkpoints"
         self.save_all_states: bool = True
         self.save_best_val: bool = True
@@ -150,7 +150,9 @@ class Config(BaseConfig):
             "IEMOCAP"  # [IEMOCAP, ESD, MELD, IEMOCAPAudio, IEMOCAP_MSER]
         )
         self.data_root: str = "data/IEMOCAP"  # folder contains train.pkl and test.pkl
-        self.data_valid: str = "val.pkl"  # change this to your validation subset name if you want to use validation dataset. If None, test.pkl will be use
+        self.data_valid: str = (
+            "val.pkl"  # change this to your validation subset name if you want to use validation dataset. If None, test.pkl will be use
+        )
         self.num_workers = 0
 
         # use for training with batch size > 1
@@ -162,14 +164,16 @@ class Config(BaseConfig):
         self.num_attention_head: int = 8
         self.dropout: float = 0.5
         self.model_type: str = "MMSERA"  # [MMSERA, AudioOnly, TextOnly, SERVER]
-        self.encode_data: bool = True  # Whether to ingore the embedding part in model
+        self.encode_data: bool = False  # Whether to ingore the embedding part in model
         self.text_encoder_type: str = "bert"  # [bert, roberta]
         self.text_encoder_dim: int = 768
         self.text_unfreeze: bool = False
         self.audio_encoder_type: str = (
             "panns"  # [vggish, panns, hubert_base, wav2vec2_base, wavlm_base, lstm]
         )
-        self.audio_encoder_dim: int = 2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base, 512 - lstm
+        self.audio_encoder_dim: int = (
+            2048  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base,wavlm_base, 512 - lstm
+        )
         self.audio_norm_type: str = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze: bool = False
 
