@@ -80,14 +80,16 @@ class TorchTrainer(ABC, nn.Module):
                     e_val.append(value)
                     epoch_log.update({key: e_val})
                     postfix += f"{key}: {value:.4f} "
-                    mlflow.log_metric(f"train_{key}", value)
+                    mlflow.log_metric(f"train_{key}", value, step=step)
                 pbar.set_description(postfix)
                 pbar.update(1)
 
                 # Try to log learning rate if optax is implement with hyperparams injection
                 try:
                     mlflow.log_metric(
-                        f"learning_rate", self.optimizer.param_groups[0]["lr"]
+                        f"learning_rate",
+                        self.optimizer.param_groups[0]["lr"],
+                        step=step,
                     )
                 except:
                     pass
@@ -123,7 +125,7 @@ class TorchTrainer(ABC, nn.Module):
             postfix = ""
             for key, value in eval_logs.items():
                 postfix += f"{key}: {np.mean(value):.4f} "
-                mlflow.log_metric(f"val_{key}", np.mean(value))
+                mlflow.log_metric(f"val_{key}", np.mean(value), step=step)
             logger.info("Validation: " + postfix)
 
             # Callbacks
@@ -166,7 +168,7 @@ class TorchTrainer(ABC, nn.Module):
         for key, value in test_logs.items():
             postfix += f"{key}: {np.mean(value):.4f} "
             try:
-                mlflow.log_metric(f"test_{key}", np.mean(value))
+                mlflow.log_metric(f"test_{key}", np.mean(value), step=self.global_step)
             except:
                 logger.warning(f"Could not log test metric {key} using mlflow.")
         logger.info("Test: " + postfix)
