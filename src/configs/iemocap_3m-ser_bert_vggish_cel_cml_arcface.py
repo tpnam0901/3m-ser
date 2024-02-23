@@ -13,9 +13,15 @@ class Config(BaseConfig):
         self.batch_size = 1
         self.num_epochs = 200
 
+        # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss, CrossEntropyLoss_CenterLoss,
+        #  CombinedMarginLoss, FocalLoss,CenterLossSER,ContrastiveCenterLossSER]
         self.loss_type = "CrossEntropyLoss_CombinedMarginLoss"
 
         self.checkpoint_dir = "checkpoints_latest/IEMOCAP/3M-SER_losses"
+
+        # Sum loss
+        self.lambda_1 = 1.0
+        self.lambda_2 = 1.0
 
         # For contrastive-center loss
         self.lambda_c = 1.0
@@ -54,6 +60,8 @@ class Config(BaseConfig):
         )
         self.data_valid: str = "val.pkl"  # change this to your validation subset name if you want to use validation dataset. If None, test.pkl will be use
 
+        self.encode_data: bool = False
+        
         # use for training with batch size > 1
         self.text_max_length: int = 297
         self.audio_max_length: int = 546220
