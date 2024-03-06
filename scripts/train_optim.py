@@ -38,9 +38,9 @@ def all_possible_combination_with_key(candidates_dict: Dict):
     return all_combination_with_key
 
 
-def update_config(opt: Config, attr: str, value):
-    setattr(opt, attr, value)
-    return opt
+def update_config(cfg: Config, attr: str, value):
+    setattr(cfg, attr, value)
+    return cfg
 
 
 def main(opt_list: Config):
@@ -56,13 +56,13 @@ def main(opt_list: Config):
     all_combination_with_key = all_possible_combination_with_key(candidates_dict)
 
     for combination in all_combination_with_key:
-        opt = copy.copy(opt_list)
-        opt.name += "/"
+        cfg = copy.copy(opt_list)
+        cfg.name += "/"
         for key, value in combination.items():
-            opt = update_config(opt, key, value)
-            opt.name += f"{key}_{value}|"
-        logging.info(f"Start training {opt.name}")
-        train(opt)
+            cfg = update_config(cfg, key, value)
+            cfg.name += f"{key}_{value}|"
+        logging.info(f"Start training {cfg.name}")
+        train(cfg)
 
 
 def arg_parser():
@@ -73,5 +73,5 @@ def arg_parser():
 
 if __name__ == "__main__":
     args = arg_parser()
-    opt = get_options(args.config)
-    main(opt)
+    cfg = get_options(args.config)
+    main(cfg)

@@ -1,44 +1,51 @@
 import torch
 import torch.nn as nn
+from transformers import BertConfig
 
 from configs.base import Config
 
 from .modules import build_audio_encoder, build_text_encoder
+from .MSER.mser import MMI_Model
 
 
-class AudioOnly_v2(nn.Module):
+class AudioOnly(nn.Module):
     def __init__(
         self,
-        opt: Config,
+        cfg: Config,
         device: str = "cpu",
     ):
         """Speech Emotion Recognition with Audio Only
 
         Args:
-            opt (Config): Config object
+            cfg (Config): Config object
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(AudioOnly_v2, self).__init__()
+        super(AudioOnly, self).__init__()
 
         # Audio module
-        self.audio_encoder = build_audio_encoder(opt)
+        self.audio_encoder = build_audio_encoder(cfg)
         self.audio_encoder.to(device)
         # Freeze/Unfreeze the audio module
         for param in self.audio_encoder.parameters():
-            param.requires_grad = opt.audio_unfreeze
+            param.requires_grad = cfg.audio_unfreeze
 
-        self.dropout = nn.Dropout(opt.dropout)
+        self.dropout = nn.Dropout(cfg.dropout)
 
-        # self.linear = nn.Linear(opt.audio_encoder_dim, opt.audio_encoder_dim)
-        # self.classifer = nn.Linear(opt.audio_encoder_dim, opt.num_classes)
+        # self.linear = nn.Linear(cfg.audio_encoder_dim, cfg.audio_encoder_dim)
+        # self.classifer = nn.Linear(cfg.audio_encoder_dim, cfg.num_classes)
         # Start testing #
-        self.linear = nn.Linear(opt.audio_encoder_dim, opt.linear_layer_last_dim)
-        self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
+        self.linear = nn.Linear(cfg.audio_encoder_dim, cfg.linear_layer_last_dim)
+        self.classifer = nn.Linear(cfg.linear_layer_last_dim, cfg.num_classes)
         # End testing #
 
-        self.fusion_head_output_type = opt.fusion_head_output_type
+        self.fusion_head_output_type = cfg.fusion_head_output_type
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
         # Audio processing
         audio_embeddings = self.audio_encoder(audio)
 
@@ -69,32 +76,37 @@ class AudioOnly_v2(nn.Module):
 
 
 # Create audio only model
-class TextOnly_v2(nn.Module):
+class TextOnly(nn.Module):
     def __init__(
         self,
-        opt: Config,
+        cfg: Config,
         device: str = "cpu",
     ):
         """Speech Emotion Recognition with Text Only
 
         Args:
-            opt (Config): Config object
+            cfg (Config): Config object
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(TextOnly_v2, self).__init__()
+        super(TextOnly, self).__init__()
 
         # Text module
-        self.text_encoder = build_text_encoder(opt.text_encoder_type)
+        self.text_encoder = build_text_encoder(cfg.text_encoder_type)
         self.text_encoder.to(device)
         # Freeze/Unfreeze the text module
         for param in self.text_encoder.parameters():
-            param.requires_grad = opt.text_unfreeze
+            param.requires_grad = cfg.text_unfreeze
 
-        self.dropout = nn.Dropout(opt.dropout)
-        self.linear = nn.Linear(opt.text_encoder_dim, opt.linear_layer_last_dim)
-        self.classifer = nn.Linear(opt.linear_layer_last_dim, opt.num_classes)
+        self.dropout = nn.Dropout(cfg.dropout)
+        self.linear = nn.Linear(cfg.text_encoder_dim, cfg.linear_layer_last_dim)
+        self.classifer = nn.Linear(cfg.linear_layer_last_dim, cfg.num_classes)
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).pooler_output
         # Classification head
@@ -105,85 +117,111 @@ class TextOnly_v2(nn.Module):
         return out, text_embeddings, None, None
 
 
-class MMSERA_v2(nn.Module):
+class MMSERA(nn.Module):
     def __init__(
         self,
-        opt: Config,
+        cfg: Config,
         device: str = "cpu",
     ):
-        """Summary: 3M-SER model version 2 for optimizing parameters"""
-        super(MMSERA_v2, self).__init__()
+        """Summary: 3M-SER model version 2 for optimizing parameters.
+        Args:
+            cfg (Config): Config object
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(MMSERA, self).__init__()
         # Text module
-        self.text_encoder = build_text_encoder(opt.text_encoder_type)
+        self.text_encoder = build_text_encoder(cfg.text_encoder_type)
         self.text_encoder.to(device)
         # Freeze/Unfreeze the text module
         for param in self.text_encoder.parameters():
-            param.requires_grad = opt.text_unfreeze
+            param.requires_grad = cfg.text_unfreeze
 
         # Audio module
-        self.audio_norm_type = opt.audio_norm_type
-        self.audio_encoder = build_audio_encoder(opt)
+        self.audio_norm_type = cfg.audio_norm_type
+        self.audio_encoder = build_audio_encoder(cfg)
         self.audio_encoder.to(device)
-        if opt.audio_norm_type == "layer_norm":
-            self.audio_encoder_layer_norm = nn.LayerNorm(opt.audio_encoder_dim)
+        if cfg.audio_norm_type == "layer_norm":
+            self.audio_encoder_layer_norm = nn.LayerNorm(cfg.audio_encoder_dim)
 
         # Freeze/Unfreeze the audio module
         for param in self.audio_encoder.parameters():
-            param.requires_grad = opt.audio_unfreeze
+            param.requires_grad = cfg.audio_unfreeze
 
         # Fusion module
         self.text_attention = nn.MultiheadAttention(
-            embed_dim=opt.text_encoder_dim, num_heads=opt.num_attention_head, dropout=opt.dropout, batch_first=True
+            embed_dim=cfg.text_encoder_dim,
+            num_heads=cfg.num_attention_head,
+            dropout=cfg.dropout,
+            batch_first=True,
         )
-        self.text_linear = nn.Linear(opt.text_encoder_dim, opt.audio_encoder_dim)
-        self.text_layer_norm = nn.LayerNorm(opt.audio_encoder_dim)
+        self.text_linear = nn.Linear(cfg.text_encoder_dim, cfg.audio_encoder_dim)
+        self.text_layer_norm = nn.LayerNorm(cfg.audio_encoder_dim)
 
         self.fusion_attention = nn.MultiheadAttention(
-            embed_dim=opt.audio_encoder_dim, num_heads=opt.num_attention_head, dropout=opt.dropout, batch_first=True
+            embed_dim=cfg.audio_encoder_dim,
+            num_heads=cfg.num_attention_head,
+            dropout=cfg.dropout,
+            batch_first=True,
         )
-        self.fusion_linear = nn.Linear(opt.audio_encoder_dim, opt.audio_encoder_dim)
-        self.fusion_layer_norm = nn.LayerNorm(opt.audio_encoder_dim)
+        self.fusion_linear = nn.Linear(cfg.audio_encoder_dim, cfg.audio_encoder_dim)
+        self.fusion_layer_norm = nn.LayerNorm(cfg.audio_encoder_dim)
 
-        self.dropout = nn.Dropout(opt.dropout)
+        self.dropout = nn.Dropout(cfg.dropout)
 
-        self.linear_layer_output = opt.linear_layer_output
+        self.linear_layer_output = cfg.linear_layer_output
 
-        previous_dim = opt.audio_encoder_dim
-        if len(opt.linear_layer_output) > 0:
-            for i, linear_layer in enumerate(opt.linear_layer_output):
+        previous_dim = cfg.audio_encoder_dim
+        if len(cfg.linear_layer_output) > 0:
+            for i, linear_layer in enumerate(cfg.linear_layer_output):
                 setattr(self, f"linear_{i}", nn.Linear(previous_dim, linear_layer))
                 previous_dim = linear_layer
 
-        self.classifer = nn.Linear(previous_dim, opt.num_classes)
+        self.classifer = nn.Linear(previous_dim, cfg.num_classes)
 
-        self.fusion_head_output_type = opt.fusion_head_output_type
+        self.fusion_head_output_type = cfg.fusion_head_output_type
+        self.embed_input = False
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
-        # Text processing
-        text_embeddings = self.text_encoder(input_ids).last_hidden_state
+    def forward(
+        self,
+        input_text: torch.Tensor,
+        input_audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
+        if not self.embed_input:
+            text_embeddings = self.text_encoder(input_text).last_hidden_state
+            audio_embeddings = self.audio_encoder(input_audio)
+        else:
+            text_embeddings = input_text
+            audio_embeddings = input_audio
 
-        # Audio processing
-        audio_embeddings = self.audio_encoder(audio)
         if self.audio_norm_type == "layer_norm":
-            audio_embeddings = self.audio_encoder_layer_norm(audio_embeddings)
+            audio_embeddings_norm = self.audio_encoder_layer_norm(audio_embeddings)
         elif self.audio_norm_type == "min_max":
             # Min-max normalization
-            audio_embeddings = (audio_embeddings - audio_embeddings.min()) / (audio_embeddings.max() - audio_embeddings.min())
+            audio_embeddings_norm = (audio_embeddings - audio_embeddings.min()) / (
+                audio_embeddings.max() - audio_embeddings.min()
+            )
 
         ## Fusion Module
         # Self-attention to reduce the dimensionality of the text embeddings
         text_attention, text_attn_output_weights = self.text_attention(
-            text_embeddings, text_embeddings, text_embeddings, average_attn_weights=False
+            text_embeddings,
+            text_embeddings,
+            text_embeddings,
+            average_attn_weights=False,
         )
         text_linear = self.text_linear(text_attention)
         text_norm = self.text_layer_norm(text_linear)
 
         # Concatenate the text and audio embeddings
-        fusion_embeddings = torch.cat((text_norm, audio_embeddings), 1)
+        fusion_embeddings = torch.cat((text_norm, audio_embeddings_norm), 1)
 
         # Selt-attention module
         fusion_attention, fusion_attn_output_weights = self.fusion_attention(
-            fusion_embeddings, fusion_embeddings, fusion_embeddings, average_attn_weights=False
+            fusion_embeddings,
+            fusion_embeddings,
+            fusion_embeddings,
+            average_attn_weights=False,
         )
         fusion_linear = self.fusion_linear(fusion_attention)
         fusion_norm = self.fusion_layer_norm(fusion_linear)
@@ -207,47 +245,59 @@ class MMSERA_v2(nn.Module):
         out = self.classifer(x)
 
         if output_attentions:
-            return [out, cls_token_final_fusion_norm], [text_attn_output_weights, fusion_attn_output_weights]
+            return [out, cls_token_final_fusion_norm], [
+                text_attn_output_weights,
+                fusion_attn_output_weights,
+            ]
 
-        return out, cls_token_final_fusion_norm, text_norm.mean(dim=1), audio_embeddings.mean(dim=1)
+        return out, cls_token_final_fusion_norm, text_norm, audio_embeddings_norm
+
+    def encode_audio(self, audio: torch.Tensor):
+        return self.audio_encoder(audio)
+
+    def encode_text(self, input_ids: torch.Tensor):
+        return self.text_encoder(input_ids).last_hidden_state
 
 
-class SERVER_v2(nn.Module):
+class SERVER(nn.Module):
     def __init__(
         self,
-        opt: Config,
+        cfg: Config,
         device: str = "cpu",
     ):
         """
-
-        Args: MMSERA model extends from MMSER model in the paper
-            num_classes (int, optional): The number of classes. Defaults to 4.
-            num_attention_head (int, optional): The number of self-attention heads. Defaults to 8.
-            dropout (float, optional): Whether to use dropout. Defaults to 0.5.
+        SERVER model get from https://github.com/nhattruongpham/mmser
+        Args:
+            cfg (Config): Config object
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(SERVER_v2, self).__init__()
+        super(SERVER, self).__init__()
         # Text module
-        self.text_encoder = build_text_encoder(opt.text_encoder_type)
+        self.text_encoder = build_text_encoder(cfg.text_encoder_type)
         self.text_encoder.to(device)
         # Freeze/Unfreeze the text module
         for param in self.text_encoder.parameters():
-            param.requires_grad = opt.text_unfreeze
+            param.requires_grad = cfg.text_unfreeze
 
         # Audio module
-        self.audio_encoder = build_audio_encoder(opt)
+        self.audio_encoder = build_audio_encoder(cfg)
         self.audio_encoder.to(device)
 
         # Freeze/Unfreeze the audio module
         for param in self.audio_encoder.parameters():
-            param.requires_grad = opt.audio_unfreeze
+            param.requires_grad = cfg.audio_unfreeze
 
-        self.dropout = nn.Dropout(opt.dropout)
-        self.linear1 = nn.Linear(opt.text_encoder_dim, 128)
+        self.dropout = nn.Dropout(cfg.dropout)
+        self.linear1 = nn.Linear(cfg.text_encoder_dim, 128)
         self.linear2 = nn.Linear(256, 64)
-        self.classifer = nn.Linear(64, opt.num_classes)
+        self.classifer = nn.Linear(64, cfg.num_classes)
 
-    def forward(self, input_ids: torch.Tensor, audio: torch.Tensor, output_attentions: bool = False):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
         # Text processing
         text_embeddings = self.text_encoder(input_ids).pooler_output
         text_embeddings = self.linear1(text_embeddings)
@@ -265,3 +315,72 @@ class SERVER_v2(nn.Module):
         out = self.classifer(x)
 
         return out, fusion_embeddings, text_embeddings, audio_embeddings
+
+
+class MSER_custom(nn.Module):
+    def __init__(
+        self,
+        cfg: Config,
+        device: str = "cpu",
+    ):
+        """
+        MSER get from https://github.com/Sreyan88/MMER/blob/2b076fb11dd2f04fcae6800a1fcc7e54a13e4ba5/src/run_iemocap.py
+        Args:
+            cfg (Config): Config object
+            device (str, optional): The device to use. Defaults to "cpu".
+        """
+        super(MSER_custom, self).__init__()
+        # Text module
+        self.text_encoder = build_text_encoder(cfg.text_encoder_type)
+        self.text_encoder.to(device)
+        # Freeze/Unfreeze the text module
+        for param in self.text_encoder.parameters():
+            param.requires_grad = cfg.text_unfreeze
+
+        # Audio module
+        self.audio_encoder = build_audio_encoder(cfg)
+        self.audio_encoder.to(device)
+
+        # Freeze/Unfreeze the audio module
+        for param in self.audio_encoder.parameters():
+            param.requires_grad = cfg.audio_unfreeze
+
+        self.dropout = nn.Dropout(cfg.dropout)
+        self.linear1 = nn.Linear(cfg.text_encoder_dim, 128)
+        self.linear2 = nn.Linear(256, 64)
+        self.classifer = nn.Linear(64, cfg.num_classes)
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        audio: torch.Tensor,
+        output_attentions: bool = False,
+    ):
+        # Text processing
+        text_embeddings = self.text_encoder(input_ids).pooler_output
+        text_embeddings = self.linear1(text_embeddings)
+        # Audio processing
+        audio_embeddings = self.audio_encoder(audio)
+        # Get classification token from the audio module
+        audio_embeddings = audio_embeddings.sum(dim=1)
+
+        # Concatenate the text and audio embeddings
+        fusion_embeddings = torch.cat((text_embeddings, audio_embeddings), 1)
+
+        # Classification head
+        x = self.dropout(fusion_embeddings)
+        x = self.linear2(x)
+        out = self.classifer(x)
+
+        return out, fusion_embeddings, text_embeddings, audio_embeddings
+
+
+class MSER(MMI_Model):
+    def __init__(
+        self,
+        cfg: Config,
+        device: str = "cpu",
+    ):
+        self.config_mmi = BertConfig("src/models/MSER/config.json")
+        label_output_size = cfg.num_classes
+        super(MSER, self).__init__(self.config_mmi, label_output_size)
