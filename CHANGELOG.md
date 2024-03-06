@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.3.0](https://github.com/namphuongtran9196/3m-ser-private/compare/v0.2.1...v0.3.0) (2023-11-07)
+
+
+### Features
+
+* add combined margin loss, focal loss ([9d71b4e](https://github.com/namphuongtran9196/3m-ser-private/commit/9d71b4e9f388ca4a9f59e9558475b15260ae7dbc))
+* add confusion_maxtrix notbook ([eafcd09](https://github.com/namphuongtran9196/3m-ser-private/commit/eafcd092f9740916a4409f583e9b9b517c4ef91e))
+* add f1_score, precision, recall ([6ad6f89](https://github.com/namphuongtran9196/3m-ser-private/commit/6ad6f89868c9e15e1b6366c0a76c18e6a287ba62))
+* add lstm model ([bcbb629](https://github.com/namphuongtran9196/3m-ser-private/commit/bcbb629da179fe30079039846bb7fd364c0bfc87))
+* add MELD dataset, merge v2 scripts ([e559ffc](https://github.com/namphuongtran9196/3m-ser-private/commit/e559ffca7c236af38008ed403f5be9a0e3db9129))
+* add opt_path for config ([ac15e8d](https://github.com/namphuongtran9196/3m-ser-private/commit/ac15e8d14cb92ac7f4bf4fe996f98d68609eed9b))
+* add resume training ([7fe7150](https://github.com/namphuongtran9196/3m-ser-private/commit/7fe71507f882c5aec6f6ef4e853a00c28907578a))
+* add SERVER model, train optimize, ICTC ([6afe441](https://github.com/namphuongtran9196/3m-ser-private/commit/6afe441894ddb7b018f93c7c6732003eebf56a20))
+* add test scripts ([04ccaaf](https://github.com/namphuongtran9196/3m-ser-private/commit/04ccaafd1c3a365780140cab969d6bc1a2d80d9f))
+* **config:** add load opt from file ([c5eef15](https://github.com/namphuongtran9196/3m-ser-private/commit/c5eef15daf8403f0689bec29b942188f6e46318a))
+* fix small sample error, add torchvggish ([2db3d10](https://github.com/namphuongtran9196/3m-ser-private/commit/2db3d105b8dfc6e7ff9c7a0a11fa6d87d1370301))
+* lstm, iemocap audio data + preprocessing ([31c4ef2](https://github.com/namphuongtran9196/3m-ser-private/commit/31c4ef27f9ee841e62e7ec4121575896792bfffa))
+* model version 2 for adding more config ([1218a92](https://github.com/namphuongtran9196/3m-ser-private/commit/1218a9226a6d28cbd036f2d3b08fe696c6f403f3))
+* optional to use learning scheduler ([ea9d721](https://github.com/namphuongtran9196/3m-ser-private/commit/ea9d7216b002bd91ec53b7b3834e9239228c4f35))
+* **trainer:** add resume checkpoint ([4206d03](https://github.com/namphuongtran9196/3m-ser-private/commit/4206d036e2d6907f90a8815fb69b642964002d9a))
+* **trainer:** add save all states for margin loss ([748c807](https://github.com/namphuongtran9196/3m-ser-private/commit/748c80771d3b8565071033f2aedc4f2e9541924b))
+
+
+### Bug Fixes
+
+* addition epoch in trainer ([4fd8692](https://github.com/namphuongtran9196/3m-ser-private/commit/4fd86920be0b739bf143e5b4197cf6a895acf1e7))
+* load config ([fd6aca9](https://github.com/namphuongtran9196/3m-ser-private/commit/fd6aca94923966a549082f3e54335683067943db))
+* **network:** change linear unit in audio model ([fecf7c3](https://github.com/namphuongtran9196/3m-ser-private/commit/fecf7c3a645aa7c214524a2a736aeb065703b31b))
+* v2 model ([9e00469](https://github.com/namphuongtran9196/3m-ser-private/commit/9e004692e895d117195e03adb0cfb8f8657cbbd7))
+* vggish, 3m-ser_v2 ([51804d0](https://github.com/namphuongtran9196/3m-ser-private/commit/51804d03ce01c478bc3ceabbc44003fed3dde018))
+
+
+### Performance Improvements
+
+* merge train v2 model scripts ([a12f629](https://github.com/namphuongtran9196/3m-ser-private/commit/a12f629921e9d90282110f5df347e850ee40dd3a))
+
+
+### Documentation
+
+* update citation ([e85c791](https://github.com/namphuongtran9196/3m-ser-private/commit/e85c791c43a5e82e6c00b55659e093ac842de0fe))
+
 ## [0.2.1](https://github.com/namphuongtran9196/3m-ser-private/compare/v0.2.0...v0.2.1) (2023-07-16)
 
 
