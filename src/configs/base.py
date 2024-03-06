@@ -95,9 +95,9 @@ class Config(BaseConfig):
     def set_args(self, **kwargs):
         # Training settings
         self.trainer = "Trainer"  # Trainer type use for training model [MSER_Trainer, Trainer, MarginTrainer]
-        self.num_epochs: int = 200
+        self.num_epochs: int = 100
         self.checkpoint_dir: str = "checkpoints"
-        self.save_all_states: bool = True
+        self.save_all_states: bool = False
         self.save_best_val: bool = True
         self.max_to_keep: int = 1
         self.save_freq: int = 4000
