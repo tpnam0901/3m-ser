@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.0](https://github.com/namphuongtran9196/3m-ser/compare/v1.0.0...v1.1.0) (2024-03-06)
+
+
+### Features
+
+* add cel+ccl for audio and text, format code ([96fac67](https://github.com/namphuongtran9196/3m-ser/commit/96fac679d22b06f7400842b16ee6794397a957a5))
+* add confusion matrix ([5811b81](https://github.com/namphuongtran9196/3m-ser/commit/5811b81d18b8357564353023d8dcee8b2329f7e3))
+* add new module, improve performance ([00275a0](https://github.com/namphuongtran9196/3m-ser/commit/00275a05259c6fa41493bc2a7e5be87c28e3cd63))
+* add optim loss, encode data, esd config ([d219d10](https://github.com/namphuongtran9196/3m-ser/commit/d219d10d0fb96ff8b8ea5501791a3629b438bb65))
+* add plit dataset notebook ([dfbb67e](https://github.com/namphuongtran9196/3m-ser/commit/dfbb67ec8ea2dc93ddf3bf8bc74fa9cd857c8b89))
+* add read mlflow notebook ([fa5e670](https://github.com/namphuongtran9196/3m-ser/commit/fa5e670b21739e596232b6f223a128448fdde402))
+* add step on mlflow logging ([895d8d8](https://github.com/namphuongtran9196/3m-ser/commit/895d8d856ac074f0ff790929225d4486c2652986))
+* cosine scores plot, pca2D ([1b422a8](https://github.com/namphuongtran9196/3m-ser/commit/1b422a8bff980d1da42870bfba6b710ae07ad575))
+
+
+### Bug Fixes
+
+* eval single model, save weight callback ([a7818bb](https://github.com/namphuongtran9196/3m-ser/commit/a7818bb43648e9e8b679b2f6f7512e707996ae16))
+* update script to current version ([77a1259](https://github.com/namphuongtran9196/3m-ser/commit/77a1259e6c862c5616dea43b71b3b97eab1fa110))
+
 ## [1.0.0](https://github.com/namphuongtran9196/3m-ser/compare/v0.2.0...v1.0.0) (2023-11-07)
 
 
