@@ -15,21 +15,35 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from sklearn import svm
-from sklearn.metrics import balanced_accuracy_score, accuracy_score, confusion_matrix
+from sklearn.metrics import (
+    balanced_accuracy_score,
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+)
 from data.dataloader import build_train_test_dataset
 from tqdm.auto import tqdm
 from models import networks
 from configs.base import Config
 from collections import Counter
+from typing import Tuple
 
 
-def calculate_accuracy(y_true, y_pred):
+def calculate_accuracy(y_true, y_pred) -> Tuple[float, float]:
     class_weights = {cls: 1.0 / count for cls, count in Counter(y_true).items()}
-    bacc = balanced_accuracy_score(
-        y_true, y_pred, sample_weight=[class_weights[cls] for cls in y_true]
+    bacc = float(
+        balanced_accuracy_score(
+            y_true, y_pred, sample_weight=[class_weights[cls] for cls in y_true]
+        )
     )
-    acc = accuracy_score(y_true, y_pred)
+    acc = float(accuracy_score(y_true, y_pred))
     return bacc, acc
+
+
+def calculate_f1_score(y_true, y_pred) -> Tuple[float, float]:
+    macro_f1 = float(f1_score(y_true, y_pred, average="macro"))
+    weighted_f1 = float(f1_score(y_true, y_pred, average="weighted"))
+    return macro_f1, weighted_f1
 
 
 def eval(cfg, checkpoint_path, all_state_dict=True, cm=False):
@@ -42,8 +56,6 @@ def eval(cfg, checkpoint_path, all_state_dict=True, cm=False):
     weight = torch.load(checkpoint_path, map_location=torch.device(device))
     if all_state_dict:
         weight = weight["state_dict_network"]
-    else:
-        weight = weight.state_dict()
 
     network.load_state_dict(weight)
     network.eval()
@@ -63,6 +75,7 @@ def eval(cfg, checkpoint_path, all_state_dict=True, cm=False):
             y_actu.append(label.detach().cpu().numpy()[0])
             y_pred.append(preds.detach().cpu().numpy()[0])
     bacc, acc = calculate_accuracy(y_actu, y_pred)
+    macro_f1, weighted_f1 = calculate_f1_score(y_actu, y_pred)
     if cm:
         cm = confusion_matrix(y_actu, y_pred)
         print("Confusion Matrix: \n", cm)
@@ -92,7 +105,7 @@ def eval(cfg, checkpoint_path, all_state_dict=True, cm=False):
         plt.tight_layout()
         plt.savefig(cfg.name + ".png", format="png", dpi=1200)
 
-    return bacc, acc
+    return bacc, acc, macro_f1, weighted_f1
 
 
 def find_checkpoint_folder(path):
@@ -111,7 +124,7 @@ def main(root_path, cm):
     test_set = args.test_set if args.test_set is not None else "test.pkl"
     csv_path = os.path.basename(root_path) + "{}.csv".format(test_set)
     # field names
-    fields = ["BACC", "ACC", "Time", "Model", "Settings"]
+    fields = ["BACC", "ACC", "MACRO_F1", "WEIGHTED_F1", "Time", "Model", "Settings"]
     with open(csv_path, "a") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fields)
         writer.writeheader()
@@ -123,23 +136,36 @@ def main(root_path, cm):
             logging.info("Evaluating: {}/{}/{}".format(model_name, settings, time))
             cfg_path = os.path.join(ckpt, "cfg.log")
             ckpt_path = os.path.join(ckpt, "weights/best_acc/checkpoint_0_0.pt")
+            all_state_dict = True
+            if not os.path.exists(ckpt_path):
+                ckpt_path = os.path.join(ckpt, "weights/best_acc/checkpoint_0.pth")
+                all_state_dict = False
+
             cfg = Config()
             cfg.load(cfg_path)
             # Change to test set
             cfg.data_valid = test_set
-            bacc, acc = eval(cfg, ckpt_path, cm=cm)
+            bacc, acc, macro_f1, weighted_f1 = eval(
+                cfg, ckpt_path, all_state_dict=all_state_dict, cm=cm
+            )
             writer.writerows(
                 [
                     {
                         "BACC": round(bacc * 100, 2),
                         "ACC": round(acc * 100, 2),
+                        "MACRO_F1": round(macro_f1 * 100, 2),
+                        "WEIGHTED_F1": round(weighted_f1 * 100, 2),
                         "Time": time,
                         "Model": model_name,
                         "Settings": settings,
                     }
                 ]
             )
-            logging.info("BACC {:.3f} | ACC {:.3f}".format(bacc, acc))
+            logging.info(
+                "BACC {:.4f} | ACC {:.4f}, | MACRO_F1 {:.4f} | WEIGHTED_F1 {:.4f}".format(
+                    bacc, acc, macro_f1, weighted_f1
+                )
+            )
 
 
 def arg_parser():
@@ -176,14 +202,31 @@ if __name__ == "__main__":
     args = arg_parser()
     if not args.recursive:
         cfg_path = os.path.join(args.checkpoint_path, "cfg.log")
+        all_state_dict = True
         ckpt_path = os.path.join(
             args.checkpoint_path, "weights/best_acc/checkpoint_0_0.pt"
         )
+        if not os.path.exists(ckpt_path):
+            ckpt_path = os.path.join(
+                args.checkpoint_path, "weights/best_acc/checkpoint_0.pth"
+            )
+            all_state_dict = False
+
         cfg = Config()
         cfg.load(cfg_path)
         # Change to test set
-        cfg.data_valid = "test.pkl"
-        bacc, acc = eval(cfg, ckpt_path, cm=args.confusion_matrix)
-        logging.info("BACC {:.3f} | ACC {:.3f}".format(bacc, acc))
+        test_set = args.test_set if args.test_set is not None else "test.pkl"
+        cfg.data_valid = test_set
+        bacc, acc, macro_f1, weighted_f1 = eval(
+            cfg,
+            ckpt_path,
+            cm=args.confusion_matrix,
+            all_state_dict=all_state_dict,
+        )
+        logging.info(
+            "BACC {:.4f} | ACC {:.4f}, | MACRO_F1 {:.4f} | WEIGHTED_F1 {:.4f}".format(
+                bacc, acc, macro_f1, weighted_f1
+            )
+        )
     else:
         main(args.checkpoint_path, args.confusion_matrix)
