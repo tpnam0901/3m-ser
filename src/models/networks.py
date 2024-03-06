@@ -250,7 +250,7 @@ class MMSERA(nn.Module):
                 fusion_attn_output_weights,
             ]
 
-        return out, cls_token_final_fusion_norm, text_norm, audio_embeddings
+        return out, cls_token_final_fusion_norm, text_norm, audio_embeddings_norm
 
     def encode_audio(self, audio: torch.Tensor):
         return self.audio_encoder(audio)

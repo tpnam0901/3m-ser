@@ -88,8 +88,8 @@ class Weighted_CrossEntropyLoss_ContrastiveCenterLoss(nn.Module):
         super(Weighted_CrossEntropyLoss_ContrastiveCenterLoss, self).__init__()
         self.cc_loss = ContrastiveCenterLoss(cfg)
         self.ce_loss = CELoss()
-        self.alpha_1 = nn.Parameter(torch.ones(1) * 0.5)
-        self.alpha_2 = nn.Parameter(torch.ones(1) * 0.5)
+        self.alpha_1 = nn.Parameter(torch.ones(1))
+        self.alpha_2 = nn.Parameter(torch.ones(1))
 
     def forward(self, feat: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         logits = feat[0]
