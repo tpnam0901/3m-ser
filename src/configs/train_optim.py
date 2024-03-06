@@ -15,7 +15,9 @@ class Config(BaseConfig):
 
         self.loss_type = "CrossEntropyLoss_ContrastiveCenterLoss"  # [CrossEntropyLoss, CrossEntropyLoss_ContrastiveCenterLoss]
 
-        self.checkpoint_dir = f"checkpoints/3M-SER_v2_roberta_wav2vec2_losses_optim/{self.loss_type}"
+        self.checkpoint_dir = (
+            f"checkpoints/3M-SER_roberta_wav2vec2_losses_optim/{self.loss_type}"
+        )
 
         # For contrastive-center loss
         self.lambda_c = 1.0
@@ -31,11 +33,15 @@ class Config(BaseConfig):
         self.focal_loss_gamma = 0.5
         self.focal_loss_alpha = None
 
-        self.model_type = "MMSERA_v2"  # [MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module]
+        self.model_type = (
+            "MMSERA"  # [MMSERA, AudioOnly, TextOnly, MMSERA_without_fusion_module]
+        )
         self.text_encoder_type = "roberta"  # [bert, roberta]
         self.text_encoder_dim = 768
         self.text_unfreeze = False
-        self.audio_encoder_type = "wav2vec2_base"  # [vggish, panns, hubert_base, wav2vec2_base]
+        self.audio_encoder_type = (
+            "wav2vec2_base"  # [vggish, panns, hubert_base, wav2vec2_base]
+        )
         self.audio_encoder_dim = 768  # 2048 - panns, 128 - vggish, 768 - hubert_base,wav2vec2_base, wavlm_base
         self.audio_norm_type = "layer_norm"  # [layer_norm, min_max, None]
         self.audio_unfreeze = False

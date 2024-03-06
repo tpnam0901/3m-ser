@@ -101,7 +101,7 @@ class CheckpointsCallback(Callback):
                         self.checkpoint_dir, global_epoch, global_step
                     )
                 else:
-                    ckpt_path = trainer.save(self.checkpoint_dir, global_step)
+                    ckpt_path = trainer.save_weights(self.checkpoint_dir, global_step)
                 self.keep.append(ckpt_path)
                 if len(self.keep) > self.max_to_keep:
                     logger.info(f"Deleting checkpoint {self.keep[0]}")
@@ -124,7 +124,7 @@ class CheckpointsCallback(Callback):
                             os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0, 0
                         )
                     else:
-                        ckpt_path = trainer.save(
+                        ckpt_path = trainer.save_weights(
                             os.path.join(self.checkpoint_dir, "best_{}".format(k)), 0
                         )
                 else:
@@ -149,7 +149,7 @@ class CheckpointsCallback(Callback):
                                     0,
                                 )
                             else:
-                                ckpt_path = trainer.save(
+                                ckpt_path = trainer.save_weights(
                                     os.path.join(
                                         self.checkpoint_dir, "best_{}".format(k)
                                     ),
@@ -176,7 +176,7 @@ class CheckpointsCallback(Callback):
                                     0,
                                 )
                             else:
-                                ckpt_path = trainer.save(
+                                ckpt_path = trainer.save_weights(
                                     os.path.join(
                                         self.checkpoint_dir, "best_{}".format(k)
                                     ),

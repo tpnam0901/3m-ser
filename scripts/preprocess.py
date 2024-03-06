@@ -60,14 +60,22 @@ def preprocess_IEMOCAP(args):
     for sess_id in tqdm.tqdm(session_id):
         sess_path = os.path.join(data_root, "Session{}".format(sess_id))
         sess_autio_root = os.path.join(sess_path, "sentences/wav")
+        sess_text_root = os.path.join(sess_path, "dialog/transcriptions")
         sess_label_root = os.path.join(sess_path, "dialog/EmoEvaluation")
         label_paths = glob.glob(os.path.join(sess_label_root, "*.txt"))
         for l_path in label_paths:
+            l_name = os.path.basename(l_path)
+            transcripts_path = os.path.join(sess_text_root, l_name)
+            with open(transcripts_path, "r") as f:
+                transcripts = f.readlines()
+                transcripts = {
+                    t.split(":")[0]: t.split(":")[1].strip() for t in transcripts
+                }
             with open(l_path, "r") as f:
                 label = f.read().split("\n")
                 for l in label:
                     if str(l).startswith("["):
-                        data = l.split()
+                        data = l[1:].split()
                         wav_folder = data[3][:-5]
                         wav_name = data[3] + ".wav"
                         emo = data[4]
@@ -80,26 +88,51 @@ def preprocess_IEMOCAP(args):
                             )
                             continue
                         emo = iemocap2label.get(emo, None)
+                        text_query = data[3] + " [{:08.4f}-{:08.4f}]".format(
+                            float(data[0]), float(data[2][:-1])
+                        )
                         if emo is not None:
-                            samples.append((wav_path, emo))
+                            text = transcripts.get(text_query, None)
+                            if text is None:
+                                text_query = data[3] + " [{:08.4f}-{:08.4f}]".format(
+                                    float(data[0]), (float(data[2][:-1]) + 0.0001)
+                                )
+                                text = transcripts.get(text_query, None)
+                                if text is None:
+                                    text_query = data[
+                                        3
+                                    ] + " [{:08.4f}-{:08.4f}]".format(
+                                        float(data[0]) + 0.0001, float(data[2][:-1])
+                                    )
+                                    text = transcripts.get(text_query, None)
+                                    if text is None:
+                                        print(transcripts.keys())
+                                        print(text_query)
+                                        raise Exception
+                            samples.append((wav_path, text, emo))
                             labels.append(emo)
 
     # Shuffle and split
     temp = list(zip(samples, labels))
     random.Random(args.seed).shuffle(temp)
     samples, labels = zip(*temp)
-    train_samples, test_samples, _, _ = train_test_split(
-        samples, labels, test_size=0.2, random_state=args.seed
+    train, test_samples, train_labels, _ = train_test_split(
+        samples, labels, test_size=0.1, random_state=args.seed
     )
-
+    train_samples, val_samples, _, _ = train_test_split(
+        train, train_labels, test_size=0.1, random_state=args.seed
+    )
     # Save data
     os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
     with open(os.path.join(args.dataset + "_preprocessed", "train.pkl"), "wb") as f:
         pickle.dump(train_samples, f)
+    with open(os.path.join(args.dataset + "_preprocessed", "val.pkl"), "wb") as f:
+        pickle.dump(val_samples, f)
     with open(os.path.join(args.dataset + "_preprocessed", "test.pkl"), "wb") as f:
         pickle.dump(test_samples, f)
 
     logging.info(f"Train samples: {len(train_samples)}")
+    logging.info(f"Val samples: {len(val_samples)}")
     logging.info(f"Test samples: {len(test_samples)}")
     logging.info(f"Saved to {args.dataset + '_preprocessed'}")
     logging.info("Preprocessing finished successfully")
@@ -197,13 +230,13 @@ def preprocess_MELD(args):
     os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
     with open(os.path.join(args.dataset + "_preprocessed", "train.pkl"), "wb") as f:
         pickle.dump(train_samples, f)
-    with open(os.path.join(args.dataset + "_preprocessed", "dev.pkl"), "wb") as f:
+    with open(os.path.join(args.dataset + "_preprocessed", "val.pkl"), "wb") as f:
         pickle.dump(dev_samples, f)
     with open(os.path.join(args.dataset + "_preprocessed", "test.pkl"), "wb") as f:
         pickle.dump(test_samples, f)
 
     logging.info(f"Train samples: {len(train_samples)}")
-    logging.info(f"Dev samples: {len(dev_samples)}")
+    logging.info(f"Val samples: {len(dev_samples)}")
     logging.info(f"Test samples: {len(test_samples)}")
     logging.info(f"Saved to {args.dataset + '_preprocessed'}")
     logging.info("Preprocessing finished successfully")
@@ -246,18 +279,24 @@ def preprocess_ESD(args):
     temp = list(zip(samples, labels))
     random.Random(args.seed).shuffle(temp)
     samples, labels = zip(*temp)
-    train_samples, test_samples, _, _ = train_test_split(
+    train, test_samples, train_labels, _ = train_test_split(
         samples, labels, test_size=0.2, random_state=args.seed
+    )
+    train_samples, val_samples, _, _ = train_test_split(
+        train, train_labels, test_size=0.1, random_state=args.seed
     )
 
     # Save data
     os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
     with open(os.path.join(args.dataset + "_preprocessed", "train.pkl"), "wb") as f:
         pickle.dump(train_samples, f)
+    with open(os.path.join(args.dataset + "_preprocessed", "val.pkl"), "wb") as f:
+        pickle.dump(val_samples, f)
     with open(os.path.join(args.dataset + "_preprocessed", "test.pkl"), "wb") as f:
         pickle.dump(test_samples, f)
 
     logging.info(f"Train samples: {len(train_samples)}")
+    logging.info(f"Train samples: {len(val_samples)}")
     logging.info(f"Test samples: {len(test_samples)}")
     logging.info(f"Saved to {args.dataset + '_preprocessed'}")
     logging.info("Preprocessing finished successfully")
