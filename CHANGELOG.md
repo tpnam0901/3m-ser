@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.1](https://github.com/namphuongtran9196/3m-ser/compare/v0.1.0...v0.1.1) (2024-05-24)
+
+
+### Bug Fixes
+
+* grad through vggish ([3a88133](https://github.com/namphuongtran9196/3m-ser/commit/3a88133e6516d324ba0dfb63947d1017db4a63d6))
+
+
+### Documentation
+
+* add link to 4M-SER ([90a5313](https://github.com/namphuongtran9196/3m-ser/commit/90a53138c9231d99e94eda1ede517698c3df2d9c))
+* fix docs ([d4e090e](https://github.com/namphuongtran9196/3m-ser/commit/d4e090e205bdb84214f6d141cd5be45236acc0af))
+
 ## 0.1.0 (2023-06-09)
 
 
