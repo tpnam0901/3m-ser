@@ -13,6 +13,7 @@
 </p>
 
 <p align="center">
+  <a href="#abstract">4M-SER</a> •
   <a href="#abstract">Abstract</a> •
   <a href="#key-features">Key Features</a> •
   <a href="#how-to-use">How To Use</a> •
@@ -21,6 +22,10 @@
   <a href="#citation">Citation</a> •
   <a href="#references">References</a> •
 </p>
+
+## 4M-SER
+- You can found our extend 3M-SER [here](https://github.com/namphuongtran9196/4m-ser) 
+- 4M-SER:Comprehensive Study of Multi-Feature Embeddings and Multi-Loss Functions with Multi-Head Self-Attention Fusion for Multi-Modal Speech Emotion Recognition.
 
 ## Abstract
 > Recent research has shown that multi-modal learning is a successful method for enhancing classification performance by mixing several forms of input, notably in speech-emotion recognition (SER) tasks. However, the difference between the modalities may affect SER performance. To overcome this problem, a novel approach for multi-modal SER called 3M-SER is proposed in this paper. The 3M-SER leverages multi-head attention to fuse information from multiple feature embeddings, including audio and text features. The 3M-SER approach is based on the SERVER approach but includes an additional fusion module that improves the integration of text and audio features, leading to improved classification performance. To further enhance the correlation between the modalities, a LayerNorm is applied to audio features prior to fusion. Our approach achieved an unweighted accuracy (UA) and weighted accuracy (WA) of 79.96% and 80.66%, respectively, on the IEMOCAP benchmark dataset. This indicates that the proposed approach is better than SERVER and recent methods with similar approaches. In addition, it highlights the effectiveness of incorporating an extra fusion module in multi-modal learning.
