@@ -5,7 +5,7 @@ from transformers import BertConfig, BertModel
 
 
 # Create Multi-modal model
-class MMSERA(nn.Module):
+class _3M_SER(nn.Module):
     def __init__(
         self,
         num_classes=4,
@@ -21,7 +21,7 @@ class MMSERA(nn.Module):
             dropout (float, optional): Whether to use dropout. Defaults to 0.5.
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(MMSERA, self).__init__()
+        super(_3M_SER, self).__init__()
         # Text module
         config = BertConfig.from_pretrained(
             "bert-base-uncased", output_hidden_states=True
@@ -116,7 +116,7 @@ class MMSERA(nn.Module):
 
 
 # Create Multi-modal model - layer norm
-class MMSERALayerNorm(nn.Module):
+class _3M_SERLayerNorm(nn.Module):
     def __init__(
         self,
         num_classes=4,
@@ -132,7 +132,7 @@ class MMSERALayerNorm(nn.Module):
             dropout (float, optional): Whether to use dropout. Defaults to 0.5.
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(MMSERALayerNorm, self).__init__()
+        super(_3M_SERLayerNorm, self).__init__()
         # Text module
         config = BertConfig.from_pretrained(
             "bert-base-uncased", output_hidden_states=True
@@ -229,7 +229,7 @@ class MMSERALayerNorm(nn.Module):
 
 
 # Create Multi-modal model - min max
-class MMSERAMinMax(nn.Module):
+class _3M_SERMinMax(nn.Module):
     def __init__(
         self,
         num_classes=4,
@@ -245,7 +245,7 @@ class MMSERAMinMax(nn.Module):
             dropout (float, optional): Whether to use dropout. Defaults to 0.5.
             device (str, optional): The device to use. Defaults to "cpu".
         """
-        super(MMSERAMinMax, self).__init__()
+        super(_3M_SERMinMax, self).__init__()
         # Text module
         config = BertConfig.from_pretrained(
             "bert-base-uncased", output_hidden_states=True

@@ -4,13 +4,17 @@ import torch
 from torch import Tensor
 from transformers import BertTokenizer
 
-from models.networks import MMSERA, MMSERALayerNorm
+from models.networks import _3M_SER, _3M_SERLayerNorm
 from utils.torch.trainer import TorchTrainer
 
 
 class Trainer(TorchTrainer):
     def __init__(
-        self, network: Union[MMSERA, MMSERALayerNorm], tokenizer: BertTokenizer, criterion: torch.nn.CrossEntropyLoss, **kwargs
+        self,
+        network: Union[_3M_SER, _3M_SERLayerNorm],
+        tokenizer: BertTokenizer,
+        criterion: torch.nn.CrossEntropyLoss,
+        **kwargs
     ):
         super().__init__(**kwargs)
         self.network = network
@@ -26,7 +30,9 @@ class Trainer(TorchTrainer):
         # Prepare batch
         text, label, sprectrome = batch["text"], batch["label"], batch["sprectrome"]
         label = torch.tensor([int(label)])
-        input_ids = torch.tensor(self.tokenizer.encode(text, add_special_tokens=True)).unsqueeze(0)
+        input_ids = torch.tensor(
+            self.tokenizer.encode(text, add_special_tokens=True)
+        ).unsqueeze(0)
 
         # Move inputs to cpu or gpu
         sprectrome = sprectrome.to(self.device)
@@ -44,14 +50,19 @@ class Trainer(TorchTrainer):
         # Calculate accuracy
         _, preds = torch.max(output, 1)
         accuracy = torch.mean((preds == label).float())
-        return {"loss": loss.detach().cpu().item(), "acc": accuracy.detach().cpu().item()}
+        return {
+            "loss": loss.detach().cpu().item(),
+            "acc": accuracy.detach().cpu().item(),
+        }
 
     def test_step(self, batch: Dict[str, Tensor]) -> Dict[str, Tensor]:
         self.network.eval()
         # Prepare batch
         text, label, sprectrome = batch["text"], batch["label"], batch["sprectrome"]
         label = torch.tensor([int(label)])
-        input_ids = torch.tensor(self.tokenizer.encode(text, add_special_tokens=True)).unsqueeze(0)
+        input_ids = torch.tensor(
+            self.tokenizer.encode(text, add_special_tokens=True)
+        ).unsqueeze(0)
 
         # Move inputs to cpu or gpu
         sprectrome = sprectrome.to(self.device)
@@ -65,4 +76,7 @@ class Trainer(TorchTrainer):
             # Calculate accuracy
             _, preds = torch.max(output, 1)
             accuracy = torch.mean((preds == label).float())
-        return {"loss": loss.detach().cpu().item(), "acc": accuracy.detach().cpu().item()}
+        return {
+            "loss": loss.detach().cpu().item(),
+            "acc": accuracy.detach().cpu().item(),
+        }
