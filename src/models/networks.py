@@ -23,7 +23,9 @@ class MMSERA(nn.Module):
         """
         super(MMSERA, self).__init__()
         # Text module
-        config = BertConfig.from_pretrained("bert-base-uncased", output_hidden_states=True)
+        config = BertConfig.from_pretrained(
+            "bert-base-uncased", output_hidden_states=True
+        )
         self.bert = BertModel.from_pretrained("bert-base-uncased", config=config)
         self.bert.to(device)
         # Freeze the text module
@@ -31,7 +33,7 @@ class MMSERA(nn.Module):
             param.requires_grad = False
 
         # Audio module
-        self.vggish = vggish()
+        self.vggish = vggish(postprocess=False)
         self.vggish.to(device)
         # Freeze the audio module
         for param in self.vggish.parameters():
@@ -39,13 +41,19 @@ class MMSERA(nn.Module):
 
         # Fusion module
         self.text_attention = nn.MultiheadAttention(
-            embed_dim=768, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=768,
+            num_heads=num_attention_head,
+            dropout=dropout,
+            batch_first=True,
         )
         self.text_linear = nn.Linear(768, 128)
         self.text_layer_norm = nn.LayerNorm(128)
 
         self.fusion_attention = nn.MultiheadAttention(
-            embed_dim=128, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=128,
+            num_heads=num_attention_head,
+            dropout=dropout,
+            batch_first=True,
         )
         self.fusion_linear = nn.Linear(128, 128)
         self.fusion_layer_norm = nn.LayerNorm(128)
@@ -64,7 +72,10 @@ class MMSERA(nn.Module):
         ## Fusion Module
         # Self-attention to reduce the dimensionality of the text embeddings
         text_attention, text_attn_output_weights = self.text_attention(
-            text_embeddings, text_embeddings, text_embeddings, average_attn_weights=False
+            text_embeddings,
+            text_embeddings,
+            text_embeddings,
+            average_attn_weights=False,
         )
         text_linear = self.text_linear(text_attention)
         text_norm = self.text_layer_norm(text_linear)
@@ -81,7 +92,10 @@ class MMSERA(nn.Module):
 
         # Selt-attention module
         fusion_attention, fusion_attn_output_weights = self.fusion_attention(
-            fusion_embeddings, fusion_embeddings, fusion_embeddings, average_attn_weights=False
+            fusion_embeddings,
+            fusion_embeddings,
+            fusion_embeddings,
+            average_attn_weights=False,
         )
         fusion_linear = self.fusion_linear(fusion_attention)
         fusion_norm = self.fusion_layer_norm(fusion_linear)
@@ -120,7 +134,9 @@ class MMSERALayerNorm(nn.Module):
         """
         super(MMSERALayerNorm, self).__init__()
         # Text module
-        config = BertConfig.from_pretrained("bert-base-uncased", output_hidden_states=True)
+        config = BertConfig.from_pretrained(
+            "bert-base-uncased", output_hidden_states=True
+        )
         self.bert = BertModel.from_pretrained("bert-base-uncased", config=config)
         self.bert.to(device)
         # Freeze the text module
@@ -128,7 +144,7 @@ class MMSERALayerNorm(nn.Module):
             param.requires_grad = False
 
         # Audio module
-        self.vggish = vggish()
+        self.vggish = vggish(postprocess=False)
         self.vggish.to(device)
         self.vggish_layer_norm = nn.LayerNorm(128)
         # Freeze the audio module
@@ -137,13 +153,19 @@ class MMSERALayerNorm(nn.Module):
 
         # Fusion module
         self.text_attention = nn.MultiheadAttention(
-            embed_dim=768, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=768,
+            num_heads=num_attention_head,
+            dropout=dropout,
+            batch_first=True,
         )
         self.text_linear = nn.Linear(768, 128)
         self.text_layer_norm = nn.LayerNorm(128)
 
         self.fusion_attention = nn.MultiheadAttention(
-            embed_dim=128, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=128,
+            num_heads=num_attention_head,
+            dropout=dropout,
+            batch_first=True,
         )
         self.fusion_linear = nn.Linear(128, 128)
         self.fusion_layer_norm = nn.LayerNorm(128)
@@ -163,7 +185,10 @@ class MMSERALayerNorm(nn.Module):
         ## Fusion Module
         # Self-attention to reduce the dimensionality of the text embeddings
         text_attention, text_attn_output_weights = self.text_attention(
-            text_embeddings, text_embeddings, text_embeddings, average_attn_weights=False
+            text_embeddings,
+            text_embeddings,
+            text_embeddings,
+            average_attn_weights=False,
         )
         text_linear = self.text_linear(text_attention)
         text_norm = self.text_layer_norm(text_linear)
@@ -180,7 +205,10 @@ class MMSERALayerNorm(nn.Module):
 
         # Selt-attention module
         fusion_attention, fusion_attn_output_weights = self.fusion_attention(
-            fusion_embeddings, fusion_embeddings, fusion_embeddings, average_attn_weights=False
+            fusion_embeddings,
+            fusion_embeddings,
+            fusion_embeddings,
+            average_attn_weights=False,
         )
         fusion_linear = self.fusion_linear(fusion_attention)
         fusion_norm = self.fusion_layer_norm(fusion_linear)
@@ -219,7 +247,9 @@ class MMSERAMinMax(nn.Module):
         """
         super(MMSERAMinMax, self).__init__()
         # Text module
-        config = BertConfig.from_pretrained("bert-base-uncased", output_hidden_states=True)
+        config = BertConfig.from_pretrained(
+            "bert-base-uncased", output_hidden_states=True
+        )
         self.bert = BertModel.from_pretrained("bert-base-uncased", config=config)
         self.bert.to(device)
         # Freeze the text module
@@ -227,18 +257,24 @@ class MMSERAMinMax(nn.Module):
             param.requires_grad = False
 
         # Audio module
-        self.vggish = vggish()
+        self.vggish = vggish(postprocess=False)
         self.vggish.to(device)
 
         # Fusion module
         self.text_attention = nn.MultiheadAttention(
-            embed_dim=768, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=768,
+            num_heads=num_attention_head,
+            dropout=dropout,
+            batch_first=True,
         )
         self.text_linear = nn.Linear(768, 128)
         self.text_layer_norm = nn.LayerNorm(128)
 
         self.fusion_attention = nn.MultiheadAttention(
-            embed_dim=128, num_heads=num_attention_head, dropout=dropout, batch_first=True
+            embed_dim=128,
+            num_heads=num_attention_head,
+            dropout=dropout,
+            batch_first=True,
         )
         self.fusion_linear = nn.Linear(128, 128)
         self.fusion_layer_norm = nn.LayerNorm(128)
@@ -254,12 +290,17 @@ class MMSERAMinMax(nn.Module):
         # Audio processing
         audio_embeddings = self.vggish(audio)
         # Min-max normalization
-        audio_embeddings = (audio_embeddings - audio_embeddings.min()) / (audio_embeddings.max() - audio_embeddings.min())
+        audio_embeddings = (audio_embeddings - audio_embeddings.min()) / (
+            audio_embeddings.max() - audio_embeddings.min()
+        )
 
         ## Fusion Module
         # Self-attention to reduce the dimensionality of the text embeddings
         text_attention, text_attn_output_weights = self.text_attention(
-            text_embeddings, text_embeddings, text_embeddings, average_attn_weights=False
+            text_embeddings,
+            text_embeddings,
+            text_embeddings,
+            average_attn_weights=False,
         )
         text_linear = self.text_linear(text_attention)
         text_norm = self.text_layer_norm(text_linear)
@@ -276,7 +317,10 @@ class MMSERAMinMax(nn.Module):
 
         # Selt-attention module
         fusion_attention, fusion_attn_output_weights = self.fusion_attention(
-            fusion_embeddings, fusion_embeddings, fusion_embeddings, average_attn_weights=False
+            fusion_embeddings,
+            fusion_embeddings,
+            fusion_embeddings,
+            average_attn_weights=False,
         )
         fusion_linear = self.fusion_linear(fusion_attention)
         fusion_norm = self.fusion_layer_norm(fusion_linear)
