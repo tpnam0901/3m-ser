@@ -66,7 +66,9 @@ class Config(BaseConfig):
         self.num_classes = 4
         self.num_attention_head = 8
         self.dropout = 0.5
-        self.model_type = "MMSERALayerNorm"  # [MMSERA, MMSERAMinMax, MMSERALayerNorm]
+        self.model_type = (
+            "_3M_SERLayerNorm"  # [_3M_SER, _3M_SERMinMax, _3M_SERLayerNorm]
+        )
 
         for key, value in kwargs.items():
             setattr(self, key, value)
