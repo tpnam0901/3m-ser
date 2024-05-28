@@ -4,7 +4,7 @@
   <br>
 </h1>
 
-<h4 align="center">Official code repository for paper "Multi-modal Speech Emotion Recognition using Multi-head Attention Fusion of Multi-feature Embeddings". Paper accepted to EAI INISCOM 2023</h4>
+<h4 align="center">Official code repository for paper "Multi-modal Speech Emotion Recognition using Multi-head Attention Fusion of Multi-feature Embeddings".</h4>
 
 <p align="center">
 <a href=""><img src="https://img.shields.io/github/stars/namphuongtran9196/3m-ser?" alt="stars"></a>
@@ -31,6 +31,7 @@
 > Recent research has shown that multi-modal learning is a successful method for enhancing classification performance by mixing several forms of input, notably in speech-emotion recognition (SER) tasks. However, the difference between the modalities may affect SER performance. To overcome this problem, a novel approach for multi-modal SER called 3M-SER is proposed in this paper. The 3M-SER leverages multi-head attention to fuse information from multiple feature embeddings, including audio and text features. The 3M-SER approach is based on the SERVER approach but includes an additional fusion module that improves the integration of text and audio features, leading to improved classification performance. To further enhance the correlation between the modalities, a LayerNorm is applied to audio features prior to fusion. Our approach achieved an unweighted accuracy (UA) and weighted accuracy (WA) of 79.96% and 80.66%, respectively, on the IEMOCAP benchmark dataset. This indicates that the proposed approach is better than SERVER and recent methods with similar approaches. In addition, it highlights the effectiveness of incorporating an extra fusion module in multi-modal learning.
 ## Key Features
 - 3M-SER - a multi-modal speech emotion recognition model that uses multi-head attention fusion of multi-feature embeddings to learn the relationship between speech and emotion.
+- Paper link: [Springer](https://link.springer.com/chapter/10.1007/978-3-031-47359-3_11), [Researchgate](https://www.researchgate.net/publication/375106295_Multi-modal_Speech_Emotion_Recognition_Improving_Accuracy_Through_Fusion_of_VGGish_and_BERT_Features_with_Multi-head_Attention)
 ## How To Use
 - Clone this repository 
 ```bash
